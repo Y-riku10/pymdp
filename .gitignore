@@ -1,0 +1,22 @@
+# 仮想環境
+env/
+venv/
+.env/
+
+# Pythonキャッシュ
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE設定
+.vscode/
+.idea/
+
+# OSの隠しファイル
+.DS_Store
+Thumbs.db
+
+# ログ・出力
+logs/
+results/
