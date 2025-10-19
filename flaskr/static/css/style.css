@@ -1,0 +1,116 @@
+body {
+    margin: 0;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.question-header {
+    text-align: center; /* 親コンテナで中央揃え */
+    margin-bottom: 15px;
+}
+
+.question-counter {
+    font-size: 1.0em;   /* 大きめ */
+    font-weight: bold;
+    color: #333
+}
+
+.question-instruction {
+    font-size: 0.7em;     /* 少し小さめ */
+    color: #333;        /* 説明文の色 */
+    margin-top: 5px;
+}
+
+.gif-container {
+    flex: 2;               /* 上部 2/3 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    min-height: 300px;    /* GIF がなくても高さを確保 */
+}
+
+.gif-container img {
+    max-width: 90%;
+    max-height: 100%;
+    object-fit: contain;    /* GIF の縦横比を保つ */
+}
+
+.form-container {
+    flex: 1;
+    background: white;
+    border-top: 1px solid #ddd;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* --- 設問ブロック --- */
+.question-block {
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: background 0.2s;
+}
+
+.question-block:hover {
+    background: #f5f5f5;
+}
+
+.question-text {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+/* --- SD法5段階ボタン群 --- */
+.sd5 {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    align-items: center;
+}
+
+.sd5 label {
+    display: flex;
+    align-items: center;
+    font-size: 0.9em;
+    flex: 1;
+    justify-content: center;
+    gap: 6px;
+}
+
+.sd5 input[type="radio"] {
+    margin: 0;
+}
+
+/* --- ボタン --- */
+button[type="submit"] {
+    display: block;
+    margin: 15px 0 0 auto;
+    padding: 10px 22px;
+    font-size: 1em;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button[type="submit"]:hover {
+    background-color: #3367d6;
+}
+
+/* --- メッセージ --- */
+.message {
+    color: #e53935;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 10px;
+}
+
+

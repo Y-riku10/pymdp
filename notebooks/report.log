@@ -1,0 +1,147 @@
+2025-10-08 05:21:12,247 - pyswarms.single.global_best - INFO - Optimize for 1 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:21:14,551 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-08 05:21:15,840 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 141282.578125, best pos: [0.40153879 0.08985584 0.30355752 0.66812671 0.26600444 0.51566088
+ 0.25450194 0.72351207 0.95520994]
+2025-10-08 05:22:03,868 - pyswarms.single.global_best - INFO - Optimize for 1 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:22:03,895 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 102754.328125, best pos: [0.16237149 0.19520256 0.65272634 0.15415084 0.47323093 0.8553996
+ 0.26419327 0.79901813 0.44713338]
+2025-10-08 05:22:03,920 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:25:42,922 - pyswarms.single.global_best - INFO - Optimize for 10 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:25:43,219 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 5005187.5, best pos: [0.60419649 0.84914331 0.51525655 0.84355138 0.89164391 0.68191012
+ 0.2954257  0.58349801 0.36397045 0.64007115 0.30994291 0.45849014
+ 0.72825777 0.67041084 0.87484922 0.91602484 0.0659703  0.52072184
+ 0.62502072 0.54219298 0.12249634 0.33868312 0.27141448 0.20046996]
+2025-10-08 05:25:43,227 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:25:59,262 - pyswarms.single.global_best - INFO - Optimize for 100 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:26:01,419 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 7109808.0, best pos: [0.3351615  0.83044199 0.5614086  0.93726374 0.46689789 0.13326143
+ 0.22753246 0.79519208 0.22350391 0.558954   0.8577521  0.58517473
+ 0.42687963 0.15303727 0.34267227 0.35064669 0.72737837 0.692441
+ 0.9768918  0.87806274 0.65413518 0.82768306 0.83810674 0.72408775]
+2025-10-08 05:26:01,427 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:26:21,989 - pyswarms.single.global_best - INFO - Optimize for 100 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:26:24,071 - pyswarms.single.global_best - INFO - Optimization finished | best cost: -1.342095515510927e+29, best pos: [ 1.28185762e+03  5.87759472e+03  2.58767400e+04 -7.58031202e+03
+ -3.21543540e+03  7.34987254e+04  3.48093617e+03 -7.93867004e+03
+ -1.05689593e+02 -1.02080097e+05 -7.97873515e+02  5.61549563e+02
+ -2.25681957e+04  1.12897493e+11  9.11170620e+03 -6.59609246e+03
+  7.84303353e+03  5.72530429e+03  5.19101020e+03  6.44810085e+04
+ -1.19467095e+04 -1.48911289e+03  7.10964908e+04 -4.90196282e+03]
+2025-10-08 05:26:24,080 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:26:45,067 - pyswarms.single.global_best - INFO - Optimize for 100 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:26:47,167 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 11678.20703125, best pos: [ 0.26942462  0.58155779  0.91810282 -0.38298279  0.14528169  0.64070534
+ -0.30480066 -0.09305458  0.26919341]
+2025-10-08 05:26:47,175 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:31:44,206 - pyswarms.single.global_best - INFO - Optimize for 1 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:31:44,268 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 756942.9375, best pos: [0.48247841 0.95051864 0.87248812 0.06874976 0.5670616  0.68184012
+ 0.61283156 0.46116565 0.2330211 ]
+2025-10-08 05:31:44,277 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:32:10,780 - pyswarms.single.global_best - INFO - Optimize for 1 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:32:10,831 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 4853099.5, best pos: [0.28531304 0.44570846 0.70093211 0.02150268 0.3026262  0.40882448
+ 0.04875245 0.59602377 0.6576008 ]
+2025-10-08 05:32:10,839 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:33:03,968 - pyswarms.single.global_best - INFO - Optimize for 1 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:33:04,017 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 4607153.5, best pos: [0.26274494 0.59846135 0.9850886  0.07825697 0.82205354 0.22629103
+ 0.77197162 0.01371971 0.96035385]
+2025-10-08 05:33:04,024 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:34:20,925 - pyswarms.single.global_best - INFO - Optimize for 1 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:34:20,952 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 103135.1171875, best pos: [0.12648317 0.47284053 0.45919196 0.20286321 0.82547197 0.55136915
+ 0.76726072 0.16768638 0.03084218]
+2025-10-08 05:34:20,961 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:34:54,034 - pyswarms.single.global_best - INFO - Optimize for 200 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:34:58,420 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 20721.833984375, best pos: [-0.10699052  0.22865862  0.54372201 -0.22984462  0.35749053  0.71477049
+  0.11919233  0.57026057  0.44013198]
+2025-10-08 05:34:58,429 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:38:17,065 - pyswarms.single.global_best - INFO - Optimize for 200 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:38:23,257 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 270455.21875, best pos: [-0.30281901 -0.29355063 -0.11886534 -0.63868708  0.16164597  0.76298666
+  0.18459978 -0.08471195  0.08171733]
+2025-10-08 05:38:23,266 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:39:56,531 - pyswarms.single.global_best - INFO - Optimize for 200 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:40:04,758 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 1211.9337158203125, best pos: [-1.38775475 -0.79455529 -0.06054409  0.09050737  1.14382768  1.72558344
+  1.07499934  1.39548598 -0.14244978]
+2025-10-08 05:40:04,768 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 05:41:04,113 - pyswarms.single.global_best - INFO - Optimize for 200 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 05:41:11,535 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 296.05242919921875, best pos: [ 0.07219902  0.18904972  0.50736555 -0.8715937  -0.51082453  0.43127232
+  0.18471093  0.95061555 -0.55768416]
+2025-10-08 05:41:11,543 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 23:35:39,175 - pyswarms.single.global_best - INFO - Optimize for 200 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 23:35:40,418 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-08 23:35:48,825 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 970.775634765625, best pos: [ 0.01832353 -0.19888741  0.12691839  0.02518669  1.18388884  0.30317234
+ -1.65289376 -2.93638029 -0.36555554]
+2025-10-08 23:35:48,843 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 23:37:38,383 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 23:44:26,569 - pyswarms.single.global_best - INFO - Optimize for 200 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 23:44:27,147 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-08 23:44:35,701 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 559.03173828125, best pos: [ 0.13056737 -0.11427232 -0.41655298 -0.71261981  0.08428595  0.54251902
+ -0.22984329  0.43717092  2.25684868]
+2025-10-08 23:44:35,727 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 23:55:11,687 - pyswarms.single.global_best - INFO - Optimize for 200 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 23:55:12,847 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-08 23:55:21,428 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 392.36346435546875, best pos: [ 0.29255792  0.65208359  1.27743114 -0.25867146  0.87468115 -0.51461772
+  0.25859396 -0.55471809  1.21991422]
+2025-10-08 23:55:21,457 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 23:58:52,638 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-08 23:58:53,783 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-08 23:58:54,487 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 1581.0400390625, best pos: [0.08008495 0.61957694 1.27422454 0.40681237 1.02869559 1.36595641
+ 0.58025676 1.28601981 1.77695648]
+2025-10-08 23:58:54,520 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-08 23:59:27,695 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 00:05:08,056 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 00:05:09,187 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 00:05:09,875 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 2437.681396484375, best pos: [0.21972613 0.62908589 1.11501426 0.134409   1.66539749 1.04776581
+ 0.70883947 0.61079898 0.86357601]
+2025-10-09 00:05:09,898 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 00:18:57,350 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 00:18:58,513 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 00:18:59,217 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 3416.421875, best pos: [0.35130777 0.63897929 0.85424161 0.18759544 0.30334101 0.06826453
+ 0.05903971 0.48822171 0.63963167]
+2025-10-09 00:18:59,243 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 00:23:44,919 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 00:23:46,058 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 00:23:46,741 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 1277.0042724609375, best pos: [0.34384376 0.87837834 1.24569382 0.0067448  1.07086852 1.47985677
+ 0.07150396 1.19538812 1.06603218]
+2025-10-09 00:23:46,765 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 00:24:11,896 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 00:36:02,432 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 00:36:03,618 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 00:36:04,301 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 3676.87646484375, best pos: [0.07211674 0.61535731 1.23657556 0.54061098 0.83560154 0.75209838
+ 0.68497131 1.16385074 0.14344588]
+2025-10-09 00:36:04,324 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 00:37:25,794 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 00:39:13,899 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 00:40:07,491 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 00:40:08,645 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 00:40:09,345 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 2825.494140625, best pos: [0.30824464 0.54286775 0.59346438 0.43863416 0.8915624  0.57806757
+ 0.08899701 0.42194981 0.76091479]
+2025-10-09 00:40:09,371 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 00:43:21,635 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 00:43:22,755 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 00:43:23,434 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 3541.41259765625, best pos: [0.54649666 0.32896719 0.32302891 0.02359152 0.82178499 0.37859447
+ 0.25971545 0.44705509 0.28127153]
+2025-10-09 00:43:23,460 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 04:49:32,850 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 04:49:35,177 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 04:49:36,481 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 4030.93017578125, best pos: [0.59158471 0.70922038 0.55507725 0.41924815 1.1627446  1.65001336
+ 0.55858394 1.65496328 0.88824167]
+2025-10-09 04:49:36,510 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-10-09 04:55:05,975 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-10-09 05:10:18,114 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 05:10:19,255 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 05:10:19,945 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 2857.515380859375, best pos: [0.61802584 0.36477265 0.40484025 0.05099246 0.67407186 0.88202171
+ 0.0425265  0.45202667 0.26451562]
+2025-10-09 05:10:19,970 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-10-09 05:10:52,177 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-10-09 05:12:04,281 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 05:12:05,364 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 05:12:06,019 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 2097.2568359375, best pos: [0.10150031 0.4584289  0.72917036 0.19027796 0.88412398 0.83829581
+ 0.72194659 0.37387663 0.58654771]
+2025-10-09 05:12:06,039 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-10-09 05:12:34,098 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 05:12:35,235 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 05:12:35,949 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 3070.3310546875, best pos: [ 0.47824634  0.893565    1.11600007 -0.04199296  1.29572063  0.91786008
+  1.39326383  1.67376421  0.89199205]
+2025-10-09 05:12:35,981 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-10-09 05:13:54,513 - pyswarms.single.global_best - INFO - Optimize for 2 iters with {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+2025-10-09 05:13:55,595 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-10-09 05:13:56,228 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 3810.386962890625, best pos: [0.68194357 1.1410628  0.70132366 0.42165454 1.19472292 1.07118083
+ 0.54616025 0.80156766 1.07525658]
+2025-10-09 05:13:56,250 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2025-10-09 05:16:11,953 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.PillowWriter'>

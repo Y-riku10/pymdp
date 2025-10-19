@@ -1,0 +1,44 @@
+<head>
+    <meta charset="utf-8">
+    <title>アンケート</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<div class="question-header">
+    <div class="question-counter">
+        質問{{ qnum }}/{{ total }}
+    </div>
+    <div class="question-instruction">
+        動きを見て、以下の質問に回答してください。
+    </div>
+</div>
+
+
+<div class="gif-container">
+    <img src="{{ url_for('static', filename='video/sample.gif') }}" />
+</div>
+
+<div class="form-container">
+    <form method="POST">
+        {% for q in questions %}
+        <div class="question-block">
+            <div class="question-text">{{ loop.index }}. {{ q.text }}</div>
+            <div class="sd5">
+                {% for i in range(5) %}
+                <label>
+                    <input type="radio" name="{{ q.id }}" value="{{ i+1 }}" required>
+                    <span>{{ q.labels[i] }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if message %}
+        <div class="message">{{ message }}</div>
+        {% endif %}
+
+        <button type="submit">次へ</button>
+    </form>
+</div>
+

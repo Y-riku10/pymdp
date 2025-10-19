@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>動き評価アンケート</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="video-container">
+        <p style="color:white; text-align:center; line-height:100px;">
+            （動画）
+        </p>
+    </div>
+
+    <div class="form-container">
+        {% if message %}
+            <p class="message">{{ message }}</p>
+        {% endif %}
+
+        <form method="POST">
+            {% for q in questions %}
+                <div class="question-block">
+                <p>{{ q.text }}</p>
+                <div class="sd5">
+                    {% for i in range(5) %}
+                    <label>
+                        <input type="radio" name="{{ q.id }}" value="{{ i + 1 }}" required>
+                        {{ q.labels[i] }}
+                    </label>
+                    {% endfor %}
+                </div>
+                <hr>
+                </div>
+            {% endfor %}
+            <button type="submit">送信</button>
+        </form>
+    </div>
+</body>
+</html>
