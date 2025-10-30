@@ -1,0 +1,3 @@
+[submodule "yglab/pymdp"]
+	path = yglab/pymdp
+	url = https://github.com/hideyy/pymdp.git
