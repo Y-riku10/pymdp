@@ -591,8 +591,17 @@ class Agent(Module):
             #past_beliefs = jnp.concatenate((past_qs, empirical_prior), axis=1)
             #print(past_beliefs[0].shape)
             #print(current_qs[0].shape)
+
+            # time軸に沿って concat
+            # empirical_prior_exp = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), empirical_prior)
+            # past_beliefs = jtu.tree_map(lambda x, y: jnp.concatenate([x, y], axis=1), past_qs, empirical_prior_exp)
+            
         else:
+            
+            # past_beliefs = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), empirical_prior)
+
             past_beliefs = empirical_prior
+
         #past_beliefs = jtu.tree_map(lambda x, y: jnp.concatenate([x, jnp.expand_dims(jnp.array(y), axis=1)], axis=1), past_qs, empirical_prior)
         #past_beliefs = jtu.tree_map(lambda x: x.squeeze(axis=0), past_beliefs)
         #past_beliefs = [jnp.array([x]) for x in past_qs] + [jnp.array([y]) for y in empirical_prior]
@@ -606,7 +615,21 @@ class Agent(Module):
         #kld = inference.calc_KLD(past_beliefs,current_qs)
         #print("calculate")
         kld = inference.calc_KLD(past_beliefs,current_qs)
+        # bs = inference.calc_KLD(current_qs, past_beliefs) # 順番逆にしただけ
+        kld = jtu.tree_map(lambda x: x.sum(2), kld)
         return kld
+    
+    def calc_BS_past_currentqs(self, empirical_prior, past_qs, current_qs):
+        if past_qs is not None:
+            # time軸に沿って concat
+            empirical_prior_exp = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), empirical_prior)
+            past_beliefs = jtu.tree_map(lambda x, y: jnp.concatenate([x, y], axis=1), past_qs, empirical_prior_exp)
+        else:
+            past_beliefs = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), empirical_prior)
+        bs = inference.calc_KLD(current_qs, past_beliefs) # 順番逆にしただけ
+        bs = jtu.tree_map(lambda x: x.sum(2), bs)
+        return bs
+
     
     def infer_policies_efe(self, qs: List,rng_key=None):
         """
