@@ -618,6 +618,7 @@ class Agent(Module):
 
         return kld
     
+    
     def calc_BS_past_currentqs(self, empirical_prior, past_qs, current_qs):
         if past_qs is not None:
             # time軸に沿って concat
