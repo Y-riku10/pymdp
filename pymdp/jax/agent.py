@@ -615,8 +615,7 @@ class Agent(Module):
         #kld = inference.calc_KLD(past_beliefs,current_qs)
         #print("calculate")
         kld = inference.calc_KLD(past_beliefs,current_qs)
-        # bs = inference.calc_KLD(current_qs, past_beliefs) # 順番逆にしただけ
-        kld = jtu.tree_map(lambda x: x.sum(2), kld)
+
         return kld
     
     def calc_BS_past_currentqs(self, empirical_prior, past_qs, current_qs):
@@ -627,7 +626,6 @@ class Agent(Module):
         else:
             past_beliefs = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), empirical_prior)
         bs = inference.calc_KLD(current_qs, past_beliefs) # 順番逆にしただけ
-        bs = jtu.tree_map(lambda x: x.sum(2), bs)
         return bs
 
     

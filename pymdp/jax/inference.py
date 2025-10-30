@@ -169,34 +169,34 @@ def update_posterior_states_vfe(
     
     return qs_hist, err, vfe, kld2, bs, un#qs_hist, err, vfe, kld, bs, un
 
-# def calc_KLD(past_beliefs,current_qs):
+def calc_KLD(past_beliefs,current_qs):
     
-#     def compute_KLD_for_factor(past_beliefs_f, current_qs_f, f):
-#         #print(past_beliefs_f.shape)
-#         #print(current_qs_f.shape)
-#         H_past_beliefs = xlogy(past_beliefs_f,past_beliefs_f).sum(-1)
-#         #H_past_beliefs = xlogy(current_qs_f,current_qs_f).sum()
-#         past_beliefs_lncurrent_qs = xlogy(past_beliefs_f, current_qs_f).sum(-1)
+    def compute_KLD_for_factor(past_beliefs_f, current_qs_f, f):
+        #print(past_beliefs_f.shape)
+        #print(current_qs_f.shape)
+        H_past_beliefs = xlogy(past_beliefs_f,past_beliefs_f).sum(-1)
+        #H_past_beliefs = xlogy(current_qs_f,current_qs_f).sum()
+        past_beliefs_lncurrent_qs = xlogy(past_beliefs_f, current_qs_f).sum(-1)
         
-#         return H_past_beliefs-past_beliefs_lncurrent_qs
-#     #
-#     kld_for_factor = jtu.tree_map(compute_KLD_for_factor, past_beliefs, current_qs, list(range(len(past_beliefs)))) #- past_beliefs_lncurrent_qs
-#     return kld_for_factor#jtu.tree_reduce(lambda x,y: x+y, kld_for_factor)
+        return H_past_beliefs-past_beliefs_lncurrent_qs
+    #
+    kld_for_factor = jtu.tree_map(compute_KLD_for_factor, past_beliefs, current_qs, list(range(len(past_beliefs)))) #- past_beliefs_lncurrent_qs
+    return kld_for_factor#jtu.tree_reduce(lambda x,y: x+y, kld_for_factor)
 
 # calc_KLd_past_qurrentqsの出力をinfer_states_vfeと同じ形式にするための修正
-def calc_KLD(past_beliefs, current_qs):
-    def compute_KLD_for_factor(past_beliefs_f, current_qs_f, f):
-        # past_beliefs_f: (policy, time, state)
-        # current_qs_f:   (policy, time, state) or (policy, state)
-        # 必要に応じてブロードキャスト
-        if current_qs_f.ndim == 2:  # (policy, state)
-            current_qs_f = current_qs_f[:, None, :]  # (policy, 1, state)
-        # 各policy, 各時刻, 各状態に対してKL項を計算
-        kld_tensor = xlogy(past_beliefs_f, past_beliefs_f) - xlogy(past_beliefs_f, current_qs_f)
-        return kld_tensor  # shape = (policy, time, state)
+# def calc_KLD(past_beliefs, current_qs):
+#     def compute_KLD_for_factor(past_beliefs_f, current_qs_f, f):
+#         # past_beliefs_f: (policy, time, state)
+#         # current_qs_f:   (policy, time, state) or (policy, state)
+#         # 必要に応じてブロードキャスト
+#         if current_qs_f.ndim == 2:  # (policy, state)
+#             current_qs_f = current_qs_f[:, None, :]  # (policy, 1, state)
+#         # 各policy, 各時刻, 各状態に対してKL項を計算
+#         kld_tensor = xlogy(past_beliefs_f, past_beliefs_f) - xlogy(past_beliefs_f, current_qs_f)
+#         return kld_tensor  # shape = (policy, time, state)
 
-    kld_for_factor = jtu.tree_map(compute_KLD_for_factor, past_beliefs, current_qs, list(range(len(past_beliefs))))
-    return kld_for_factor
+#     kld_for_factor = jtu.tree_map(compute_KLD_for_factor, past_beliefs, current_qs, list(range(len(past_beliefs))))
+#     return kld_for_factor
 
 def update_posterior_states_vfe_policies(
         A, 
