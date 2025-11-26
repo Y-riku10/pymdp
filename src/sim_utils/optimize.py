@@ -272,13 +272,13 @@ class Optimizer:
                 total_cost += torque_change * compute_total_torque_change(self.model, data, qs, self.dt)
 
             if vfe != 0.0 or kld != 0.0 or bs != 0.0 or un != 0.0:
-                vfes = compute_total_vfe(self.agent, self.env, qs, self.dt)
+                vfes, klds, bss, uns = compute_total_vfe(self.agent, self.env, qs, self.dt)
                 total_vfe = sum(vfes)/len(qs)
-                # total_kld = sum(klds)
-                # total_bs = sum(bss)
-                # total_un = sum(uns)
+                total_kld = sum(klds)/len(qs)
+                total_bs = sum(bss)/len(qs)
+                total_un = sum(uns)/len(qs)
                 total_vfe_var = np.var(vfes)
-                total_cost += vfe * total_vfe  + vfe_var * total_vfe_var #+ kld * total_kld + bs * total_bs + un * total_un
+                total_cost += vfe * total_vfe  + vfe_var * total_vfe_var + kld * total_kld + bs * total_bs + un * total_un
 
             return total_cost
 
@@ -296,8 +296,8 @@ class Optimizer:
 def compute_total_vfe(agent, env, qs, dt):
     env.computeAllobs(qs,dt)
     time_steps = len(qs)
-    vfes = agent.run_perception_for_optimize(timesteps = time_steps, env = env)
-    return vfes
+    vfes, klds, bss, uns = agent.run_perception_for_optimize(timesteps = time_steps, env = env)
+    return vfes, klds, bss, uns
 
 
 # 軌跡からジャークを計算する関数

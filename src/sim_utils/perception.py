@@ -2,23 +2,24 @@
 import os
 import pickle
 import time
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import softmax
 from scipy.stats import vonmises
 import seaborn as sns
-from pymdp import utils
+
 import jax.tree_util as jtu
 from jax import jit
 import jax.random as jr
 import jax.numpy as jnp
 from tqdm import tqdm
 from functools import partial
-from pymdp.jax.agent import Agent as AIFAgent
 from jax.tree_util import tree_map
 from equinox import tree_at
 
-
+from pymdp import utils
+from pymdp.jax.agent import Agent as AIFAgent
 
 import pinocchio as pin
 
@@ -267,14 +268,14 @@ class RobotPerceptor:
             num_states=None,
             batch_size:int=1,
             num_history:int=16,
-            noise:float=0.01,
+            noise:float=0.01, # 観測ノイズ
             eps:float=10e-8,
             Avars=[1.0, 1.0, 1.0],
             Bvars=[1.0, 1.0, 1.0],
             Ainit='diagonal',
             Binit='diagonal',
             Dinit='sigmoid',
-            modality_per_joint:int=None,
+            modality_per_joint:int=3,
             Bdepends=False,
             sincos_encoding:bool=False
     ):
@@ -282,10 +283,10 @@ class RobotPerceptor:
         self.num_obs = num_obs
         self.num_modalities = len(num_obs)
         if num_states is None:
-            num_states = num_obs
+            self.num_states = num_obs
         else:
             self.num_states = num_states
-        self.num_factors = len(num_states)
+        self.num_factors = len(self.num_states)
         self.num_controls = [1 for _ in range(self.num_factors)]
 
         # その他のパラメータ
@@ -469,7 +470,7 @@ class RobotPerceptor:
                             delta = np.abs(s-o)
                             if delta > ns/2:
                                 delta = ns - delta
-                            kappa = 2.0
+                            kappa = 1 / self.Avars[m] ** 2
                             A[m][o,s] = np.exp(kappa * np.cos(2 * np.pi * delta / ns)) + self.eps
         else:
             assert False, ("Ainit must be 'prior' or 'flat' or 'diagonal'")
@@ -537,7 +538,7 @@ class RobotPerceptor:
                         # B[f][s1,s2] = np.exp(kappa * np.cos(2 * np.pi * delta / ns))
 
                         # 正規分布
-                        sigma = 1.0  # 標準偏差は適宜調整
+                        sigma = self.Bvars[f]  # 標準偏差は適宜調整
                         B[f][s1, s2] = np.exp(- (delta ** 2) / (2 * sigma ** 2))
         else:
             assert False, ("Binit must be 'prior' or 'flat' or 'random' or 'diagonal'")
@@ -620,14 +621,18 @@ class RobotPerceptor:
         )
 
     # 最適化用の最低限の知覚
-    def run_perception_for_optimize(self, timesteps, env):
+    def run_perception_for_optimize(self, timesteps, env, const_beliefs=None):
         """
         vfe_hist, kld_hist, bs_hist, un_histのリストを返す
         """
         batch_keys = jr.split(jr.PRNGKey(0), self.batch_size)
         # 環境の時刻を初期化
         T = 0
+
         vfes = np.zeros(timesteps)
+        klds = np.zeros(timesteps)
+        bss = np.zeros(timesteps)
+        uns = np.zeros(timesteps)
         FEparam = None
         actions_t = 0 # 初期時刻では行動は未定義
         actions = None # 過去の行動
@@ -643,7 +648,7 @@ class RobotPerceptor:
             # 環境から観測を取得
             obs = env.current_obs(T)
             # 履歴に記録
-            self.obs_hist.append(obs)
+            # self.obs_hist.append(obs)
             # バッチに合わせて観測を整形
             outcome_t = [jnp.expand_dims(jnp.expand_dims(o, 0), 0).astype(jnp.float32) for o in obs]
             if outcomes is None:
@@ -673,34 +678,48 @@ class RobotPerceptor:
 
             # データの成形
             # データのidxは、hist[batch_idx][tau_idx]
+            # 各値を、現在時刻のみ抽出
             vfe = FEparam['vfe'][0][-1]  # 変分自由エネルギー
-            # kld = self.FEparam['kld'][0][-1]  # Kullback-Leibler divergence
-            # bs = self.FEparam['bs'][0][-1]    # ベイジアンサプライズ
-            # un = self.FEparam['un'][0][-1]    # 不確実性
+            bs = FEparam['bs'][0][-1]    # ベイジアンサプライズ
+            un = FEparam['un'][0][-1]    # 不確実性
+
+            # kldも同様の形式でFEparamに入っている
+            kld = FEparam['kld'][0][-1]# Kullback-Leibler divergence
+
+            
+            # print("kld shape:", len(kld), kld[0].shape)
+            # print("FEparam:", FEparam)
+
 
             # 履歴に保存
             vfes[T] = vfe
+            klds[T] = kld
+            bss[T] = bs
+            uns[T] = un
 
             # 時間ステップを更新
             T += 1
 
             if T == timesteps:
                 break
-        return vfes
+        return vfes, klds, bss, uns
 
-    def run_perception(self, timesteps, env, savedir="./test_data", filename=None):
+    # 履歴が残る
+    def run_perception(self, timesteps, env, num_history=None, const_beliefs=None, savedir=None, filename=None):
         """
         環境を観測し、認識を行う
         :param timesteps: 観測する時間ステップ数
         :param env: 環境オブジェクト
         :return: 認識結果のリスト
         """
+        if num_history is None:
+            num_history = self.num_history
         batch_keys = jr.split(jr.PRNGKey(0), self.batch_size)
         start_time = time.time()
         # 環境の時刻を初期化
         T = 0
 
-        for _ in tqdm(range(timesteps), desc="Perception Loop", position=0, leave=False):
+        while(True): #for _ in tqdm(range(timesteps), desc="Perception Loop", position=0, leave=False):
             # 環境から観測を取得
             obs = env.current_obs(T)
             # 履歴に記録
@@ -711,6 +730,20 @@ class RobotPerceptor:
                 self.outcomes = outcome_t
             else:
                 self.outcomes = jtu.tree_map(lambda prev_o, new_o: jnp.concatenate([prev_o, new_o], 1), self.outcomes, outcome_t)
+
+            # 固定の事前分布がある場合
+            # すべての時刻において、一つ前の時刻の認識はconst_beliefsの一部とみなす
+            if const_beliefs:
+                if T == 0:
+                    self.infer_args[0] = self.agents.D
+                    self.infer_args[1] = None
+                else:
+                    self.infer_args[0] = const_beliefs[T]
+                    # infer_args[1]: は変えない
+                    # current_qs = tree_map(lambda x: x[:, -num_history:], current_qs)
+            
+            # priorだけ先に保存
+            self.beliefs_hist.append(self.infer_args[0]) # prior 
 
             # エージェントを更新
             (
@@ -729,7 +762,7 @@ class RobotPerceptor:
                 self.infer_args,
                 batch_keys,
                 batch_size=self.batch_size,
-                num_history=self.num_history
+                num_history=num_history
             )
 
             # データの成形
@@ -747,10 +780,22 @@ class RobotPerceptor:
             self.un_hist.append(un)
             # 観測、状態、行動の履歴
             self.obs_hist.append(self.observations)
-            self.qs_hist.append(self.infer_args[1][-1])
-            self.actions_hist.append(self.actions)
-            self.A_hist.append(self.agents.A)
-            self.B_hist.append(self.agents.B)
+            qs_last = [qs_f[:, -1, :] for qs_f in self.infer_args[1]] # qs リアルタイムの認識
+            self.qs_hist.append(qs_last)
+            # self.actions_hist.append(self.actions)
+            # self.A_hist.append(self.agents.A)
+            # self.B_hist.append(self.agents.B)
+
+            # empirical_prior:t-1におけるtの状態に対する予測,t-1におけるupdate_empirical_priorの出力pred
+            # past_qs:t-1におけるt-1までの状態に関する信念,t-1におけるupdate_empirical_priorの出力qs
+            # current_qs:tにおけるtまでの状態に関する信念(認識),tにおけるinfer_statesの出力qs_hist
+            # 固定の事前分布がある場合
+            # すべての時刻において、一つ前の時刻の認識はconst_beliefsの一部とみなす
+            # const_beliefs: timesteps, num_facor, ndarray(batch_size, num_states[factor])
+            # if const_beliefs:
+            #     self.infer_args[0] = const_beliefs[T]
+            #     past_qs =  const_beliefs[:T-1]
+            #     self.infer_args[1] = tree_map(lambda x: x[:, -self.num_history:], past_qs)
 
             # 時間ステップを更新
             T += 1
@@ -763,20 +808,34 @@ class RobotPerceptor:
         elapsed_time = end_time - start_time
         print(f"Perception completed in {elapsed_time:.2f} seconds.")
 
-        if T == timesteps:
-            os.makedirs(savedir, exist_ok=True)
-            if filename is None:
-                # 現在の時刻を取得してファイル名に追加
-                self.timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime())
-                self.filepath = savedir + f"test_{self.timestam}.pickle"
-            else:
-                self.filepath = savedir + filename
-            # 認識結果を保存
-            with open(self.filepath, mode='wb') as fo:
-                pickle.dump(self, fo)
-            print(f"\rMetadata saved to '{self.filepath}")
+        # if T == timesteps:
+        #     os.makedirs(savedir, exist_ok=True)
+        #     if filename is None:
+        #         # 現在の時刻を取得してファイル名に追加
+        #         self.timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime())
+        #         self.filepath = savedir + f"test_{self.timestamp}.pickle"
+        #     else:
+        #         self.filepath = savedir + filename
+        #     # 認識結果を保存
+        #     with open(self.filepath, mode='wb') as fo:
+        #         pickle.dump(self, fo)
+        #     print(f"\rMetadata saved to '{self.filepath}")
         return
     
+    def generate_const_beliefs(self, env, qs, dt):
+        # もととなる動きを入れたenvを作成
+        tmp_env = copy.deepcopy(env)
+        time_steps = len(qs)
+        tmp_env.computeAllobs(qs, dt)
+        # 観測させる
+        self.run_perception(timesteps = time_steps, env = tmp_env)
+        # 観測終わりの認識履歴を信念とする
+        const_beliefs = copy.deepcopy(self.qs_hist)
+        # 履歴は元に戻す
+        self.reset
+        return const_beliefs
+
+
     def plot_fe_all(
             self,
             filename=None,
@@ -836,6 +895,149 @@ class RobotPerceptor:
                 plt.show()
 
 
+    def plot_belief_history(self):
+        """
+        beliefs_histを時系列で可視化（seaborn heatmap版）
+        横軸: timestep, 縦軸: state index, カラー: 信念確率
+        """
+        if not hasattr(self, "beliefs_hist") or len(self.beliefs_hist) == 0:
+            print("Warning: beliefs_hist is empty.")
+            return
+
+        num_factors = len(self.beliefs_hist[0])
+        T = len(self.beliefs_hist)
+
+        fig, axes = plt.subplots(num_factors, 1, figsize=(8, 3 * num_factors), sharex=True)
+
+        if num_factors == 1:
+            axes = [axes]  # サブプロット1つ対応
+
+        for f in range(num_factors):
+            # shape: (T, batch_size, num_states[f])
+            beliefs_f = np.stack([b[f] for b in self.beliefs_hist], axis=0)
+            beliefs_mean = beliefs_f.mean(axis=1)  # (T, num_states[f])
+
+            # seaborn用にDataFrame-likeな2D配列を渡す
+            ax = axes[f]
+            sns.heatmap(
+                beliefs_mean.T,
+                ax=ax,
+                cmap="viridis",
+                cbar=True,
+                cbar_kws={"label": "Belief probability"},
+                xticklabels=10 if T > 10 else T,  # ラベルを間引く
+                yticklabels=True
+            )
+
+            ax.set_title(f"Belief distribution over time (factor {f})")
+            ax.set_ylabel("State index")
+
+        axes[-1].set_xlabel("Timestep")
+        plt.tight_layout()
+        plt.show()
+
+    def plot_qs_history(self):
+        """
+        qs_histを時系列で可視化（seaborn heatmap版）
+        横軸: timestep, 縦軸: state index, カラー: 推定分布(qs)
+        """
+        if not hasattr(self, "qs_hist") or len(self.qs_hist) == 0:
+            print("Warning: qs_hist is empty.")
+            return
+
+        num_factors = len(self.qs_hist[0])
+        T = len(self.qs_hist)
+
+        fig, axes = plt.subplots(num_factors, 1, figsize=(8, 3 * num_factors), sharex=True)
+
+        if num_factors == 1:
+            axes = [axes]  # サブプロットが1つだけの場合に対応
+
+        for f in range(num_factors):
+            # shape: (T, batch_size, num_states[f])
+            qs_f = np.stack([q[f] for q in self.qs_hist], axis=0)
+            qs_mean = qs_f.mean(axis=1)  # batch方向の平均を取る → (T, num_states[f])
+
+            ax = axes[f]
+            sns.heatmap(
+                qs_mean.T,
+                ax=ax,
+                cmap="magma",  # beliefと差をつけるなら色を変更（例: 'viridis'→'magma'）
+                cbar=True,
+                cbar_kws={"label": "Estimated probability (qs)"},
+                xticklabels=10 if T > 10 else T,
+                yticklabels=True
+            )
+
+            ax.set_title(f"qs distribution over time (factor {f})")
+            ax.set_ylabel("State index")
+
+        axes[-1].set_xlabel("Timestep")
+        plt.tight_layout()
+        plt.show()
+
+
+    def plot_belief_and_qs_history(self):
+        """
+        beliefs_hist と qs_hist を対応するファクターごとに横並びで可視化
+        左: belief, 右: qs
+        """
+        if not hasattr(self, "beliefs_hist") or len(self.beliefs_hist) == 0:
+            print("Warning: beliefs_hist is empty.")
+            return
+        if not hasattr(self, "qs_hist") or len(self.qs_hist) == 0:
+            print("Warning: qs_hist is empty.")
+            return
+
+        num_factors = len(self.beliefs_hist[0])
+        T = len(self.beliefs_hist)
+
+        fig, axes = plt.subplots(num_factors, 2, figsize=(12, 3 * num_factors), sharex=True)
+
+        if num_factors == 1:
+            axes = [axes]  # サブプロット1つの場合対応
+
+        for f in range(num_factors):
+            # beliefs
+            beliefs_f = np.stack([b[f] for b in self.beliefs_hist], axis=0)
+            beliefs_mean = beliefs_f.mean(axis=1)  # (T, num_states[f])
+            ax_belief = axes[f][0] if num_factors > 1 else axes[0]
+            sns.heatmap(
+                beliefs_mean.T,
+                ax=ax_belief,
+                cmap="viridis",
+                cbar=True,
+                cbar_kws={"label": "Belief probability"},
+                xticklabels=10 if T > 10 else T,
+                yticklabels=True
+            )
+            ax_belief.set_title(f"Belief (factor {f})")
+            ax_belief.set_ylabel("State index")
+
+            # qs
+            qs_f = np.stack([q[f] for q in self.qs_hist], axis=0)
+            qs_mean = qs_f.mean(axis=1)
+            ax_qs = axes[f][1] if num_factors > 1 else axes[1]
+            sns.heatmap(
+                qs_mean.T,
+                ax=ax_qs,
+                cmap="magma",
+                cbar=True,
+                cbar_kws={"label": "Estimated probability (qs)"},
+                xticklabels=10 if T > 10 else T,
+                yticklabels=True
+            )
+            ax_qs.set_title(f"qs (factor {f})")
+
+        axes[-1][0].set_xlabel("Timestep")
+        axes[-1][1].set_xlabel("Timestep")
+        plt.tight_layout()
+        plt.show()
+
+
+
+
+
 # エージェントの更新関数
 @partial(jit, static_argnames=['batch_size', 'num_history'])
 def update_agent(
@@ -847,27 +1049,56 @@ def update_agent(
     batch_size=1,
     num_history=16
 ):
-    beliefs, err, vfe, kld2, bs, un = agents.infer_states_vfe(
+    # 状態の推定
+    current_qs, err, vfe, kld2, bs, un = agents.infer_states_vfe(
         observations,
         infer_args[0],
         past_actions=actions,
         qs_hist=infer_args[1]
     )
-    beliefs_orig = beliefs  # 元の信念を保存
+    # 推定の結果が current_qs
+    beliefs = current_qs
+
+    # bsもkldのように別計算する試み（pymdpの変更が反映されない？）
+    # res = agents.calc_KLD_past_currentqs(infer_args[0], infer_args[1], current_qs)
+    # print(res)
+    # kld = jnp.mean(jnp.stack(res["kld"], axis=0), axis=0)
+    # bs  = jnp.mean(jnp.stack(res["bs"],  axis=0), axis=0)
+
+    # kldは別計算
+    kld = agents.calc_KLD_past_currentqs(infer_args[0], infer_args[1], current_qs)
+    kld = jnp.mean(jnp.stack(jtu.tree_leaves(kld), axis=0), axis=0)
+
+    bs = agents.calc_BS_past_currentqs(infer_args[0], infer_args[1], current_qs)
+    bs = jnp.mean(jnp.stack(jtu.tree_leaves(bs), axis=0), axis=0)
 
     # vfe, bs, unをすべての状態因子について足し合わせる
-    vfe = jnp.sum(jnp.stack(jtu.tree_leaves(vfe), axis=0), axis=0)
-    bs = jnp.sum(jnp.stack(jtu.tree_leaves(bs), axis=0), axis=0)
-    un = jnp.sum(jnp.stack(jtu.tree_leaves(un), axis=0), axis=0)
+    # これらの形状は (batch_size, T, num_factors) なので、num_factors軸で足し合わせる
+    # なお、beliefsは (batch_size, T, num_factors, num_states[factor]) の形状をしている
+    # なお、qsは (batch_size, T, num_factors, num_states[factor]) の形状をしている
+    # 結果として (batch_size, T) の形状になる
+    vfe = jnp.mean(jnp.stack(jtu.tree_leaves(vfe), axis=0), axis=0)
+    # bs = jnp.mean(jnp.stack(jtu.tree_leaves(bs), axis=0), axis=0)
+    # kld = jnp.mean(jnp.stack(jtu.tree_leaves(kld2), axis=0), axis=0)
+    un = jnp.mean(jnp.stack(jtu.tree_leaves(un), axis=0), axis=0)
+
 
     # kldの計算
     # kldはすべての状態について足し合わせたものを得る
-    # kld.shape = (batch_size, T(0<T<=16))
-    kld = agents.calc_KLD_past_currentqs(infer_args[0], infer_args[1], beliefs_orig)
+    # 現状kldの形状は、 num_factorsの長さのリストで、要素は ndArray(batch_size, T(0<T<=16))
+    # empirical_prior:t-1におけるtの状態に対する予測,t-1におけるupdate_empirical_priorの出力pred
+    # past_qs:t-1におけるt-1までの状態に関する信念,t-1におけるupdate_empirical_priorの出力qs
+    # current_qs:tにおけるtまでの状態に関する信念,tにおけるinfer_statesの出力qs_hist
+    # D_KL([past_qs, prior]|current_qs)を計算．
+    # kld = agents.calc_KLD_past_currentqs(infer_args[0], infer_args[1], current_qs)
+    # # (num_factors, batch_size, T) → (batch_size, T)
+    # kld = jnp.sum(jnp.stack(kld, axis=0), axis=0)
+
+
 
     # バッチサイズに基づいてランダムキーを分割
     batch_keys = jr.split(batch_keys[0], batch_size)
-    # 行動をサンプリング
+    # 行動をサンプリング(ダミーで一通りのみの行動を生成)
     dummy_q_pi, _neg_efe = agents.infer_policies(beliefs)
     next_action = jnp.zeros((dummy_q_pi.shape[0], len(agents.num_controls)), dtype=int)
     if actions is not None:
@@ -877,26 +1108,38 @@ def update_agent(
 
     # 観測、信念、行動の履歴を更新
     observations = tree_map(lambda x: x[:, -num_history:], observations)
-    beliefs = tree_map(lambda x: x[:, -num_history:], beliefs)
+    current_qs = tree_map(lambda x: x[:, -num_history:], current_qs)
     actions = tree_map(lambda x: x[:, -num_history:], actions)
 
     # Dの更新
-    agents = tree_at(lambda x: x.D, agents, tree_map(lambda x: x[:, 0], beliefs))
+    agents = tree_at(lambda x: x.D, agents, tree_map(lambda x: x[:, 0], current_qs))
     
-    # 次の推論のために事前信念を更新
+    # 次の推論のために事前信念を更新するなど準備
     if infer_args[1] is None:
+        # 初回はDを事前信念として使用
         empirical_prior = infer_args[0]
     else:
+        # それ以降は次の行動に基づいて予測される状態分布を事前信念として使用
         empirical_prior = agents.compute_expected_state(next_action, infer_args[1])
-    infer_args[0] = empirical_prior
-    infer_args[1] = beliefs
+    infer_args[0] = empirical_prior # 次の時刻の事前信念
+    infer_args[1] = current_qs # 次の時刻の過去の状態(認識履歴)
+
+
+    # 
+    # past_beliefs = jtu.tree_map(lambda x, y: jnp.concatenate((x, y), axis=1), infer_args[1], empirical_prior)
+    # print("past_beliefs:", [x.shape for x in past_beliefs])
+    # print("current_qs:", [x.shape for x in current_qs])
+    # print("vfe:", [x.shape for x in vfe])
+    # print("bs:", [x.shape for x in bs])
+    # print("kld:", [x.shape for x in kld])
+
 
     return agents, observations, actions, infer_args, batch_keys, {
         'vfe': vfe,
         'kld': kld,
         'bs': bs,
         'un': un,
-    }, beliefs_orig, beliefs
+    }, current_qs, beliefs
 
 
 # 可視化関数
