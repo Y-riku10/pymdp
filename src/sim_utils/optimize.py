@@ -30,6 +30,9 @@ class Optimizer:
                 time_steps = timesteps,
                 robot = robot
             )
+        
+        # 信念の初期化
+        self.const_beliefs = None
 
         # モデルと軌跡の端点を初期化
         self.model = robot
@@ -51,6 +54,12 @@ class Optimizer:
         self.best_cost = None
         self.best_particle = None
         self.best_qs = None
+
+
+    def set_const_beliefs(self, qs):
+        self.const_beliefs_qs = qs
+        self.const_beliefs = self.agent.generate_const_beliefs(self.env, qs, self.dt)
+        return
 
 
     def optimize_torque_change(self):
@@ -91,6 +100,49 @@ class Optimizer:
         
         return self.best_cost, self.best_particle, self.best_qs
     
+    def linear_base_particle(self):
+
+        num_knots = self.num_knots
+        start = self.start
+        end = self.end
+        timesteps = self.timesteps
+
+        if num_knots < 2:
+            base_particle = np.array([])
+        else:
+            # 制御点のインデックス（0からnum_knots-1）
+            knot_indices = np.arange(num_knots)
+            
+            # 制御点の時間的な割合 u_i
+            # 0.0 (始点) から 1.0 (終点) まで等間隔
+            u = knot_indices / (num_knots - 1)
+            
+            # 全制御点（始点から終点まで）の値を線形補間で計算
+            # q_knot[i] = (1 - u[i]) * start + u[i] * end
+            # np.newaxisを使ってブロードキャストにより全関節を一括計算
+            all_knot_values = (1 - u[:, np.newaxis]) * start + u[:, np.newaxis] * end
+            
+            # 中間制御点のみを抽出 (始点(0)と終点(-1)を除く)
+            intermediate_knot_values = all_knot_values[1:-1]
+            
+            # PSOの入力形式に合わせるため、ベクトル化（flatten）して返却
+            base_particle = intermediate_knot_values.flatten()
+
+            t_norm = np.linspace(0.0, 1.0, num=timesteps)
+
+            # 2. 差分ベクトル q_diff = q_end - q_start を計算
+            q_diff = end - start
+
+            # 3. 線形補間を実行
+            # 各時刻 t_i における姿勢 qs[i] は、qs[i] = q_start + t_norm[i] * q_diff
+            
+            # t_norm を (timesteps, 1) の形状にし、q_diff と start をブロードキャスト
+            # t_norm[:, np.newaxis] は (timesteps, 1)
+            # start, q_diff は (nq,)
+            base_qs = start + t_norm[:, np.newaxis] * q_diff
+
+
+        return base_particle, base_qs
 
     
     def optimize_old(self, jerk=0.0, energy=0.0, torque_change=0.0, vfe=0.0, kld=0.0, bs=0.0, un=0.0, vfe_var=0.0, iters=1):
@@ -174,7 +226,7 @@ class Optimizer:
 
         return self.best_cost, self.best_particle, self.best_qs
     
-    def optimize(self, jerk=0.0, energy=0.0, torque_change=0.0, vfe=0.0, kld=0.0, bs=0.0, un=0.0, vfe_var=0.0, iters=1, compensate_grav=True):
+    def optimize(self, jerk=0.0, energy=0.0, torque_change=0.0, vfe=0.0, kld=0.0, bs=0.0, un=0.0, vfe_var=0.0, iters=1, compensate_grav=True, end_penalty=0.0, temporal_approach_cost=0.0):
         """
     粒子群最適化（PSO: Particle Swarm Optimization）を用いて、
     ロボットアームの最適軌道を求める関数。
@@ -215,6 +267,11 @@ class Optimizer:
     compensate_grav : bool, default=True
         Trueの場合、重力項を補償してトルクを評価（重力補償なしでの純粋な運動エネルギー評価も可能）。
 
+    end_penalty : float, default=0.0
+        終点到達誤差(||q(T) - q_end||^2)に基づくペナルティ係数。
+        end_penalty > 0.0 の場合、終点ノットは自由変数となり、終点制約が緩和される。
+        end_penalty = 0.0 の場合、終点ノットは固定される。
+
     Returns
     -------
     best_cost : float
@@ -244,6 +301,17 @@ class Optimizer:
     >>> print("最適コスト:", best_cost)
     >>> visualize_trajectory(model, best_qs)
     """
+        # end_penaltyが有効な場合、終点ノットも最適化変数に含める
+        if end_penalty > 0.0:
+            # num_knots - 1 個の中間ノット + 終点ノット
+            dimensions = (self.num_knots - 1) * self.model.nq 
+            # 終点ノットを自由変数として扱うことを示すフラグ
+            free_end_knot = True
+        else:
+            # 従来の通り、num_knots - 2 個の中間ノットのみ
+            dimensions = (self.num_knots - 2) * self.model.nq
+            free_end_knot = False
+
         dimensions = (self.num_knots - 2) * self.model.nq
         options = {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
         optimizer = ps.single.GlobalBestPSO(n_particles=self.n_particles, dimensions=dimensions, options=options)
@@ -253,9 +321,18 @@ class Optimizer:
         # compute_energy_fn = make_compute_total_energy_jax(self.model, self.data, self.dt)
         # compute_torque_change_fn = make_compute_total_torque_change_jax(self.model, self.data, self.dt) pinocchioがc++使ってるからだめ
 
+
         def particle_objective(particle):
-            qs = qs_from_particle(particle, model=self.model, time_steps=self.timesteps,
-                                start=self.start, end=self.end, limits=self.limits, num_knots=self.num_knots)
+            qs = qs_from_particle(
+                particle, 
+                model=self.model, 
+                time_steps=self.timesteps,
+                start=self.start, 
+                end=self.end, 
+                limits=self.limits, 
+                num_knots=self.num_knots,
+                free_end_knot=free_end_knot
+                )
 
             data = self.model.createData()
             total_cost = 0.0
@@ -280,6 +357,35 @@ class Optimizer:
                 total_vfe_var = np.var(vfes)
                 total_cost += vfe * total_vfe  + vfe_var * total_vfe_var + kld * total_kld + bs * total_bs + un * total_un
 
+            if temporal_approach_cost != 0.0:
+                # 1. 時間インデックスの配列 [0, 1, 2, ..., T_max]
+                times = np.arange(self.timesteps)
+                
+                # 2. 時間依存の重み w(t) = (t / T_max)^2 を計算
+                # T_maxが0の場合を避ける (通常 timesteps >= 2 のため問題なし)
+                T_max = self.timesteps - 1
+                weights = (times / T_max)**2 
+                
+                # 3. 各時刻での目標終点からの誤差 (qs(t) - q_end) を計算
+                # self.end (q_end) はブロードキャストにより全時刻 qs から引かれる
+                error_diff = qs - self.end 
+                
+                # 4. 誤差の二乗ノルム ||qs(t) - q_end||^2 を計算
+                # np.sum(..., axis=1) で関節ごとの二乗和 (ノルム^2) を計算
+                squared_error = np.sum(error_diff**2, axis=1) 
+                
+                # 5. 重み付けして合計し、総コストに加算
+                # self.dt は積分近似のための時間刻み幅
+                temporal_cost = np.sum(temporal_approach_cost * weights * squared_error * self.dt)
+                
+                total_cost += temporal_cost
+
+            if end_penalty > 0.0:
+                end_error = np.linalg.norm(qs[-1] - self.end)**2
+                total_cost += end_penalty * end_error
+
+            
+
             return total_cost
 
         # vmapで全粒子のコスト並列計算
@@ -287,8 +393,16 @@ class Optimizer:
 
         # オプティマイザ実行
         self.best_cost, self.best_particle = optimizer.optimize(batched_objective, iters=iters)
-        self.best_qs = qs_from_particle(self.best_particle, self.model, self.timesteps, self.start,
-                                        self.end, self.limits, num_knots=self.num_knots)
+        self.best_qs = qs_from_particle(
+            self.best_particle, 
+            self.model, 
+            self.timesteps, 
+            self.start,
+            self.end, 
+            self.limits, 
+            num_knots=self.num_knots,
+            free_end_knot=free_end_knot
+            )
 
         return self.best_cost, self.best_particle, self.best_qs
 
