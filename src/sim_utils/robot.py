@@ -603,6 +603,65 @@ def same_limits(nq, lower=-np.pi, upper=np.pi):
     limits = [lowers, uppers]
     return np.array(limits)
 
+# ベースとなる制御点にノイズを加えて生成するバージョン
+def random_qs_from_base(model, time_steps, start, end, base_particle, var, limits=None, seed=0):
+    # 始点と終点の形状を確認
+    q_shape = pin.neutral(model).shape
+    assert start.shape == q_shape, f"start.shape {start.shape} and end.shape {end.shape} must match model's q_shape {q_shape}"
+    assert end.shape == q_shape, f"start.shape {start.shape} and end.shape {end.shape} must match model's q_shape {q_shape}"
+
+    # ランダムシード初期化
+    np.random.seed(seed)
+
+    nq = model.nq
+
+    # 可動域の設定
+    if limits is None:
+        lowers = model.lowerPositionLimit
+        uppers = model.upperPositionLimit
+    else:
+        if len(limits) == 1:
+            limits = same_limits(nq, lower=limits[0], upper=limits[1])
+        lowers, uppers = limits
+    lowers = np.array(lowers)
+    uppers = np.array(uppers)
+
+    # 始点と終点の範囲を確認
+    # startのすべての関節角度に対して、それぞれが可動域に収まっていなければassertする。
+    # endも同様
+
+    # base_particleからnum_knotsを計算
+    num_knots = len(base_particle) // nq + 2
+
+    # スプラインの制御点の時間軸
+    control_times = np.linspace(0, time_steps-1, num=num_knots)
+    times = np.arange(time_steps)
+
+    # 関節ごとの軌跡を格納する配列
+    qs = np.zeros((time_steps, nq))
+    
+    for j in range(nq):
+        # 始点と終点を固定
+        control_values = np.zeros(num_knots)
+        control_values[0] = start[j]
+        control_values[-1] = end[j]
+
+        # 中間の制御点をランダムに生成
+        # **ここを、ただのランダムな値ではなく、base_particleにN(0,var)の正規分布に従う疑似乱数を加えたものにしたい**
+        # control_values[1:-1] = np.random.uniform(lowers[j], uppers[j], num_knots-2)
+        noise = np.random.normal(loc=0, scale=var, size=num_knots-2)
+        control_values[1:-1] = base_particle[(num_knots-2)*j:(num_knots-2)*(j+1)] + noise
+
+        # CubicSpline補完
+        cs = PchipInterpolator(control_times, control_values)
+        # cs = CubicSpline(control_times, control_values, bc_type='clamped')
+
+        # 時系列データ生成
+        q_traj = cs(times)
+        qs[:, j] = q_traj
+    return qs
+
+
 def random_qs_spline(model, time_steps, start, end, limits=None, num_knots=5, seed=0):
     # 始点と終点の形状を確認
     q_shape = pin.neutral(model).shape
@@ -654,16 +713,27 @@ def random_qs_spline(model, time_steps, start, end, limits=None, num_knots=5, se
         qs[:, j] = q_traj
     return qs
 
-def qs_from_particle(particle, model, time_steps, start, end, limits, num_knots=5):
+def qs_from_particle(particle, model, time_steps, start, end, limits, num_knots=5, free_end_knot=False, grad1=False, grad2=False, grad3=False):
     """
     len(particle) = (num_knots - 2) * nq
     """
+    
+    nq = model.nq
+    
+    # 粒子の長さが終点ノットを含むか否かで変わる
+    if free_end_knot:
+        num_knots = int(len(particle)/nq + 1)
+        num_free_knots = num_knots - 1 # 中間ノット + 終点ノット
+    else:
+        num_knots = int(len(particle)/nq + 2)
+        num_free_knots = num_knots - 2 # 中間ノットのみ (始点と終点は固定)
+
+
     # 始点と終点の形状を確認
     q_shape = pin.neutral(model).shape
     assert start.shape == q_shape, f"start.shape {start.shape} and end.shape {end.shape} must match model's q_shape {q_shape}"
     assert end.shape == q_shape, f"start.shape {start.shape} and end.shape {end.shape} must match model's q_shape {q_shape}"
 
-    nq = model.nq
 
     # 可動域の設定
     if len(limits) == 1:
@@ -682,15 +752,37 @@ def qs_from_particle(particle, model, time_steps, start, end, limits, num_knots=
 
     # 関節ごとの軌跡を格納する配列
     qs = np.zeros((time_steps, nq))
+
+    grads = []
+    dqs = np.zeros((time_steps, nq))
+    ddqs = np.zeros((time_steps, nq))
+    dddqs = np.zeros((time_steps, nq))
     
     for j in range(nq):
         # 始点と終点を固定
         control_values = np.zeros(num_knots)
         control_values[0] = start[j]
-        control_values[-1] = end[j]
+        # control_values[-1] = end[j]
+        # # particleを中間の制御点に設定
+        # control_values[1:-1] = particle[(num_knots-2)*j:(num_knots-2)*(j+1)]
 
-        # particleを中間の制御点に設定
-        control_values[1:-1] = particle[(num_knots-2)*j:(num_knots-2)*(j+1)]
+        # 粒子のスライシングロジック
+        start_idx = num_free_knots * j
+        end_idx = num_free_knots * (j + 1)
+        
+        particle_segment = particle[start_idx:end_idx]
+
+        if free_end_knot:
+            # 終点ノットが自由変数に含まれる場合
+            # control_values[1:-1] に中間ノット (num_knots - 2 個)
+            control_values[1:-1] = particle_segment[:-1] 
+            # control_values[-1] に終点ノット
+            control_values[-1] = particle_segment[-1]
+        else:
+            # 終点ノットが固定（従来のロジック）
+            control_values[-1] = end[j] # 終点姿勢を固定値として使用
+            control_values[1:-1] = particle_segment # 中間ノットのみ代入
+
 
         # CubicSpline補完
         cs = PchipInterpolator(control_times, control_values)
@@ -699,7 +791,23 @@ def qs_from_particle(particle, model, time_steps, start, end, limits, num_knots=
         # 時系列データ生成
         q_traj = cs(times)
         qs[:, j] = q_traj
-    return qs
+
+        if grad1:
+            dq_traj = cs.derivative(1)(times)
+            dqs[:, j] = dq_traj
+        grads.append(dqs)
+        
+        if grad2:
+            ddq_traj = cs.derivative(2)(times)
+            ddqs[:, j] = ddq_traj
+        grads.append(ddqs)
+
+        if grad3:
+            dddq_traj = cs.derivative(3)(times)
+            dddqs[:, j] = dddq_traj
+        grads.append(dddqs)
+
+    return qs, grads
 
 
 # 特定のフレームの位置から全体の姿勢を求める関数
