@@ -795,19 +795,22 @@ def qs_from_particle(particle, model, time_steps, start, end, limits, num_knots=
         if grad1:
             dq_traj = cs.derivative(1)(times)
             dqs[:, j] = dq_traj
-        grads.append(dqs)
+            grads.append(dqs)
         
         if grad2:
             ddq_traj = cs.derivative(2)(times)
             ddqs[:, j] = ddq_traj
-        grads.append(ddqs)
+            grads.append(ddqs)
 
         if grad3:
             dddq_traj = cs.derivative(3)(times)
             dddqs[:, j] = dddq_traj
-        grads.append(dddqs)
+            grads.append(dddqs)
+        
+        if grad1 or grad2 or grad3:
+            return qs, grads
 
-    return qs, grads
+    return qs
 
 
 # 特定のフレームの位置から全体の姿勢を求める関数
