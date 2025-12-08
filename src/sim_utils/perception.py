@@ -5,7 +5,7 @@ import time
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import softmax
+# from scipy.special import softmax
 from scipy.stats import vonmises
 import seaborn as sns
 
@@ -18,8 +18,11 @@ from functools import partial
 from jax.tree_util import tree_map
 from equinox import tree_at
 
+import jax.nn as jnn
+
 from pymdp import utils
 from pymdp.jax.agent import Agent as AIFAgent
+from pymdp.jax import inference
 
 import pinocchio as pin
 
@@ -269,7 +272,7 @@ class RobotPerceptor:
             batch_size:int=1,
             num_history:int=16,
             noise:float=0.01, # 観測ノイズ
-            eps:float=10e-8,
+            eps:float=0.01,
             Avars=[1.0, 1.0, 1.0],
             Bvars=[1.0, 1.0, 1.0],
             Ainit='diagonal',
@@ -277,8 +280,10 @@ class RobotPerceptor:
             Dinit='sigmoid',
             modality_per_joint:int=3,
             Bdepends=False,
-            sincos_encoding:bool=False
+            sincos_encoding:bool=False,
+            num_iter:int=1,
     ):
+        self.num_iter = num_iter # mmpの反復回数
         # 生成モデルのパラメータ
         self.num_obs = num_obs
         self.num_modalities = len(num_obs)
@@ -381,6 +386,8 @@ class RobotPerceptor:
 
         self.FEparam = None # 変分自由エネルギーのパラメータを格納する辞書型データ
 
+        self.diff_hist = [] # past_qs - current_qsの差分の時系列データ
+
     def reset(self):
         """
         履歴を初期化
@@ -407,6 +414,8 @@ class RobotPerceptor:
         self.B_hist = [] # B行列の時系列データ
 
         self.FEparam = None # 変分自由エネルギーのパラメータを格納する辞書型データ
+
+        self.diff_hist = [] # past_qs - current_qsの差分の時系列データ
 
 
         
@@ -468,13 +477,23 @@ class RobotPerceptor:
                     for o in range(no):
                         for s in range(ns):
                             delta = np.abs(s-o)
-                            if delta > ns/2:
-                                delta = ns - delta
-                            kappa = 1 / self.Avars[m] ** 2
-                            A[m][o,s] = np.exp(kappa * np.cos(2 * np.pi * delta / ns)) + self.eps
+                            if m % 3 == 0:
+                                if delta > ns/2:
+                                    delta = ns - delta
+                                # von Mises分布
+                                # kappa = 1 / (self.Avars[m] * ns) ** 2
+                                # A[m][o,s] = np.exp(kappa * np.cos(2 * np.pi * delta / ns)) + self.eps
+
+                                # 循環型の正規分布
+                                sigma = self.Avars[m] * ns
+                                A[m][o, s] = np.exp(- (delta ** 2) / (2 * sigma ** 2)) #+ self.eps
+                            else:
+                                sigma = self.Avars[m] * ns
+                                A[m][o, s] = np.exp(- (delta ** 2) / (2 * sigma ** 2)) #+ self.eps
+
         else:
             assert False, ("Ainit must be 'prior' or 'flat' or 'diagonal'")
-        self.A = utils.norm_dist_obj_arr(A)
+        self.A = utils.norm_dist_obj_arr(A) + self.eps
         self.A_jax = jtu.tree_map(lambda x: jnp.broadcast_to(x, (self.batch_size,) + x.shape), list(self.A))
         return self.A
 
@@ -537,8 +556,12 @@ class RobotPerceptor:
                         # kappa = 2.0
                         # B[f][s1,s2] = np.exp(kappa * np.cos(2 * np.pi * delta / ns))
 
+                        if f % 3 == 0:
+                            if delta > ns / 2:
+                                delta = ns - delta
+
                         # 正規分布
-                        sigma = self.Bvars[f]  # 標準偏差は適宜調整
+                        sigma = self.Bvars[f] * ns  # 標準偏差は適宜調整
                         B[f][s1, s2] = np.exp(- (delta ** 2) / (2 * sigma ** 2))
         else:
             assert False, ("Binit must be 'prior' or 'flat' or 'random' or 'diagonal'")
@@ -617,7 +640,8 @@ class RobotPerceptor:
             A_dependencies=self.A_dependencies,
             B_dependencies=self.B_dependencies,
             onehot_obs=True,
-            inference_algo="mmp"
+            inference_algo="mmp",
+            num_iter=self.num_iter
         )
 
     # 最適化用の最低限の知覚
@@ -719,6 +743,11 @@ class RobotPerceptor:
         # 環境の時刻を初期化
         T = 0
 
+        # まとめてkld計算をするための履歴を初期化
+        all_current_qs = None
+        all_past_beliefs = None
+
+
         while(True): #for _ in tqdm(range(timesteps), desc="Perception Loop", position=0, leave=False):
             # 環境から観測を取得
             obs = env.current_obs(T)
@@ -741,9 +770,9 @@ class RobotPerceptor:
                     self.infer_args[0] = const_beliefs[T]
                     # infer_args[1]: は変えない
                     # current_qs = tree_map(lambda x: x[:, -num_history:], current_qs)
-            
+
             # priorだけ先に保存
-            self.beliefs_hist.append(self.infer_args[0]) # prior 
+            # self.beliefs_hist.append(self.infer_args[0]) # prior 
 
             # エージェントを更新
             (
@@ -753,8 +782,9 @@ class RobotPerceptor:
                 self.infer_args,
                 batch_keys,
                 self.FEparam,
-                self.beliefs_orig,
-                self.beliefs
+                posterior,
+                prior,
+                diff
             ) = update_agent(
                 self.agents,
                 self.outcomes,
@@ -764,6 +794,7 @@ class RobotPerceptor:
                 batch_size=self.batch_size,
                 num_history=num_history
             )
+
 
             # データの成形
             # データのidxは、hist[batch_idx][tau_idx]
@@ -780,8 +811,27 @@ class RobotPerceptor:
             self.un_hist.append(un)
             # 観測、状態、行動の履歴
             self.obs_hist.append(self.observations)
+            # qs_lastはpostrior
             qs_last = [qs_f[:, -1, :] for qs_f in self.infer_args[1]] # qs リアルタイムの認識
             self.qs_hist.append(qs_last)
+
+            
+            # まとめてkld計算をするための履歴
+            prior_exp = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), prior)
+            posterior_exp = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), posterior)
+
+            if all_past_beliefs is None:
+                all_past_beliefs = prior_exp
+                all_current_qs = posterior_exp
+            else:
+                all_past_beliefs = jtu.tree_map(lambda x, y: jnp.concatenate([x, y], axis=1), all_past_beliefs, prior_exp)
+                all_current_qs = jtu.tree_map(lambda x, y: jnp.concatenate([x, y], axis=1), all_current_qs, posterior_exp)
+
+            # past_qs - current_qsの差分
+            self.diff_hist.append(diff)
+
+            # self.qs_hist.append(posterior)
+            self.beliefs_hist.append(prior)
             # self.actions_hist.append(self.actions)
             # self.A_hist.append(self.agents.A)
             # self.B_hist.append(self.agents.B)
@@ -803,10 +853,23 @@ class RobotPerceptor:
             if T == timesteps:
                 break
         
+
+        # # 最後に全体の認識、信念の履歴からkld, bsを計算
+        # klds = inference.calc_KLD(all_past_beliefs, all_current_qs) # Dkl(belief || qs)
+        # bss = inference.calc_KLD(all_current_qs, all_past_beliefs) # Dkl(qs || beliefs)
+
+        # # factor次元を潰して平均をとる　→　(batch_size, T)の形状
+        # klds = jnp.mean(jnp.stack(jtu.tree_leaves(klds), axis=0), axis=0)
+        # bss = jnp.mean(jnp.stack(jtu.tree_leaves(bss), axis=0), axis=0)
+
+        # self.kld_hist = list(klds[0])
+        # self.bs_hist = list(bss[0])
+
+
         # タスク終了時の処理
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        print(f"Perception completed in {elapsed_time:.2f} seconds.")
+            # end_time = time.time()
+            # elapsed_time = end_time - start_time
+            # print(f"Perception completed in {elapsed_time:.2f} seconds.")
 
         # if T == timesteps:
         #     os.makedirs(savedir, exist_ok=True)
@@ -821,7 +884,226 @@ class RobotPerceptor:
         #         pickle.dump(self, fo)
         #     print(f"\rMetadata saved to '{self.filepath}")
         return
+
+
+    # RobotPerceptorクラス内に定義
+    def bayse_estimate(self, timesteps, env, const_beliefs, num_history=None):
+        """
+        B次元(self.batch_size=1)を早期に除去し、時系列T次元と状態S次元で
+        JAXのベクトル化を最大活用したベイズ推定を実行する。
+        """
+        
+        T = timesteps # 150
+        F = self.num_factors # 6
+        M = self.num_modalities # 6
+        eps = jnp.finfo(float).eps
+
+        # --- 1. データの一括処理のための整形 (Pythonループは T 回と F/M 回のみ) ---
+        
+        # 観測の尤度（log-likelihood）と事前分布の計算に必要な JAX 配列を作成
+
+
+        prior_jax_tf = [[jnp.squeeze(jnp.asarray(const_beliefs[t][f]), axis=0) for f in range(F)] for t in range(T)]
+        prior_stacked = [jnp.stack([prior_jax_tf[t][f] for t in range(T)], axis=0) for f in range(F)]
+
+        lik_stacked = []
+
+        for f in range(F):
+            # A_jax_m: (O[m], S[m])
+            A_jax_m = jnp.asarray(self.A[f]) 
+            
+            # T 時刻分の観測 obs_t_M[f] を取得し、(T, O[m]) にスタック
+            # env.current_obs() は t に依存するため、この T ループは避けられない
+            obs_T_O = jnp.stack([jnp.asarray(env.current_obs(t)[f]) for t in range(T)], axis=0) # (T, O[m])
+            
+            # (T, O[m]) @ (O[m], S[m]) -> (T, S[m]) の行列積を一括計算
+            # T次元に沿って一括で計算が行われる (ベクトル化)
+            lik_T_S = jnp.dot(obs_T_O, A_jax_m)
+            
+            # 対数尤度 log_likelihood は JIT 内部で計算するため、ここでは尤度を保持
+            lik_stacked.append(lik_T_S) # F個の (T, S[f]) JAX 配列のリスト
+
+
+        # prior_list_tf = []
+        # likelihood_list_tf = []
+        # for t in range(T):
+        #     # 時刻 t の全ファクター/モダリティのデータを準備
+        #     obs_t_M = env.current_obs(t) # list(M) << ndarray(O[m])
+            
+        #     prior_at_t = [] # F個の ndarray(S[f],)
+        #     lik_at_t = [] # F個の ndarray(S[f],)
+
+        #     for f in range(F): # F=M=6
+                
+        #         # --- 事前分布 (Prior) ---
+        #         # const_beliefs[t][f] は ndarray(B=1, S[f]) のため、axis=0でB次元を潰す
+        #         prior_f = jnp.squeeze(jnp.asarray(const_beliefs[t][f]), axis=0) # (S[f],)
+        #         prior_at_t.append(prior_f)
+
+        #         # --- 尤度 (Likelihood) ---
+        #         A_jax_m = jnp.asarray(self.A[f]) # m=f
+        #         obs_vector = jnp.expand_dims(jnp.asarray(obs_t_M[f]), axis=0) # (1, O[m])
+                
+        #         # A^T・obs の計算: (1, O[m]) ・ (O[m], S[m]) -> (1, S[m])
+        #         A_dot_m = jnp.dot(obs_vector, A_jax_m)
+                
+        #         # B次元を潰し、対数尤度を計算
+        #         lik_m = jnp.squeeze(A_dot_m, axis=0) # (S[m],)
+        #         lik_at_t.append(lik_m)
+                
+        #     prior_list_tf.append(prior_at_t) # T個の F次元リスト << (S[f],)
+        #     likelihood_list_tf.append(lik_at_t) # T個の F次元リスト << (S[f],)
+
+        # # T次元をスタックして、F個の ndarray(T, S[f]) のリストに変換
+        # prior_stacked = [jnp.stack([prior_list_tf[t][f] for t in range(T)], axis=0) for f in range(F)]
+        # log_lik_stacked = [jnp.stack([likelihood_list_tf[t][f] for t in range(T)], axis=0) for f in range(F)]
     
+    # --- 2. T次元をスタックし、F個の ndarray(T, S[f]) のリストに変換 (明示的なループに修正) ---
+
+        # prior_stacked = []
+        # lik_stacked = []
+
+        # for f in range(F):
+        #     # 1. Prior Stacking
+        #     # T個の (S[f],) 配列のリストを作成
+        #     prior_t_for_f = [prior_list_tf[t][f] for t in range(T)]
+            
+        #     # スタック (T, S[f])
+        #     stacked_prior = jnp.stack(prior_t_for_f, axis=0)
+        #     # どのファクターの形状が異なっているかを確認するためのデバッグ出力
+        #     print(f"Factor {f} stacked prior shape: {stacked_prior.shape}") 
+        #     prior_stacked.append(stacked_prior)
+
+        #     # 2. Likelihood Stacking
+        #     # T個の (S[f],) 配列のリストを作成
+        #     lik_t_for_f = [likelihood_list_tf[t][f] for t in range(T)]
+            
+        #     # スタック (T, S[f])
+        #     stacked_lik = jnp.stack(lik_t_for_f, axis=0)
+        #     # デバッグ出力
+        #     print(f"Factor {f} stacked lik shape: {stacked_lik.shape}")
+        #     lik_stacked.append(stacked_lik)
+        
+        # print(f"prior_stacked length: {len(prior_stacked)}")
+        # print(f"lik_stacked length: {len(lik_stacked)}")
+
+        # --- 2. JAXの tree_map/jit を用いた一括ベイズ推定とVFE/KL計算 ---
+        
+        @jit
+        def compute_all_metrics(prior_f, lik_f):
+            """
+            特定のファクター f について、全時系列 T の結果を一括計算する。
+            Parameters: prior_f, log_lik_f shapes: (T, S[f])
+            """
+            
+            # log_prior, log_likelihood, log_posterior_unnorm shapes: (T, S[f])
+            log_prior = jnp.log(prior_f + eps) 
+            log_likelihood = jnp.log(lik_f + eps)
+
+            log_posterior_unnorm = log_prior + log_likelihood
+            
+            # posterior_unnorm = prior_f * lik_f
+            # log_posterior_unnorm = jnp.log(posterior_unnorm)
+
+
+            
+            # current_qs shape: (T, S[f])
+            current_qs = jnn.softmax(log_posterior_unnorm, axis=-1)
+            # current_qs = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), current_qs)
+            current_qs_for_hist = jnp.expand_dims(current_qs, axis=1)
+
+            # All metrics shapes: (T,) (sum over S[f] dimension)
+            # VFE = -log(prior * likelihood)
+            marginal_likelihood = jnp.sum(prior_f * lik_f, axis=-1)
+            vfe_T = -jnp.log(marginal_likelihood + eps)
+
+            # KLD = Dkl(prior || qs)
+            kld_T = jnp.sum(prior_f * (log_prior - jnp.log(current_qs + eps)), axis=-1)
+
+            # BS = Dkl(qs || prior)
+            bs_T = jnp.sum(current_qs * (jnp.log(current_qs + eps) - log_prior), axis=-1)
+
+            # UN (不確実性): H(qs)
+            un_T = -jnp.sum(current_qs * jnp.log(current_qs + eps), axis=-1)
+
+            return current_qs_for_hist, vfe_T, kld_T, bs_T, un_T
+
+        # tree_map を使って F 個のファクター全てを一括で JIT 処理
+        # results_stacked: (vfe, kld, bs, un) のタプルで、各要素が F個の ndarray(T,) のリスト
+        results_stacked = jtu.tree_map(compute_all_metrics, prior_stacked, lik_stacked)
+        # print(f"result_stacked shape: {jtu.tree_map(lambda x: x.shape, results_stacked)}")
+        
+        # --- 3. 結果の整形と平均化 ---
+        # qs_F_T = jtu.tree_map(lambda x: x[0], results_stacked)
+        # vfe_F_T = jtu.tree_map(lambda x: x[1], results_stacked)
+        # kld_F_T = jtu.tree_map(lambda x: x[2], results_stacked)
+        # bs_F_T = jtu.tree_map(lambda x: x[3], results_stacked)
+        # un_F_T = jtu.tree_map(lambda x: x[4], results_stacked)
+
+        # qs_F_T = [f1[0], f2[0], f3[0], f4[0], f5[0], f6[0]]
+        # qs_F_T = results_stacked[0]
+        # vfe_F_T = results_stacked[1]
+        # kld_F_T = results_stacked[2]
+        # bs_F_T = results_stacked[3]
+        # un_F_T = results_stacked[4]
+
+        qs_F_T = [f[0] for f in results_stacked]
+        vfe_F_T = [f[1] for f in results_stacked]
+        kld_F_T = [f[2] for f in results_stacked]
+        bs_F_T = [f[3] for f in results_stacked]
+        un_F_T = [f[4] for f in results_stacked]
+
+
+        # # ★★★ 全出力の形状デバッグ ★★★
+        # all_metrics = [
+        #     (qs_F_T, "qs (T, S[f])"), 
+        #     (vfe_F_T, "VFE (T,)"), 
+        #     (kld_F_T, "KLD (T,)"), 
+        #     (bs_F_T, "BS (T,)"), 
+        #     (un_F_T, "UN (T,)")
+        # ]
+
+        # print("\n--- JIT Output Shapes Debug (All Metrics) ---")
+        # print(f"result_stacked length: {len(results_stacked)}")
+        # for metric_list, metric_name in all_metrics:
+        #     print(f"\n--- Metric: {metric_name} ---")
+        #     for f, arr in enumerate(metric_list):
+        #         # JAX配列の形状を出力
+        #         print(f"Factor {f} shape: {arr.shape}")
+        #         # print(f"Factor {f} arr: {arr}")
+        # print("-------------------------------------------\n")
+
+
+        def aggregate(F_T_list):
+            # 1. F次元でスタック: ndarray(F, T)
+            F_T_arr = jnp.stack(F_T_list, axis=0)
+            # 2. F次元で平均: ndarray(T,)
+            T_arr = jnp.mean(F_T_arr, axis=0) # F次元(axis=0)で平均
+            return np.array(T_arr).tolist()
+        
+        self.vfe_hist = aggregate(vfe_F_T)
+        self.kld_hist = aggregate(kld_F_T)
+        self.bs_hist = aggregate(bs_F_T)
+        self.un_hist = aggregate(un_F_T)
+
+        # --- 4. 信念履歴 (self.beliefs_hist, self.qs_hist) の再構築と保存 ---
+    
+        # 4.1. 事後信念 (qs_hist) の再構築 (T ↔ F の転置)
+        # qs_F_T (list(F) << ndarray(T, 1, S[f])
+        qs_hist = []
+        for t in range(T):
+            qs_at_t = [np.array(qs_F_T[f][t]) for f in range(F)]
+            qs_hist.append(qs_at_t) 
+
+        self.qs_hist = qs_hist
+
+        # 4.2. 事前信念 (beliefs_hist) の保存
+        # prior_list_tf (list(T) << list(F) << ndarray(S[f])) のJAX配列をNumPy配列に変換
+        # beliefs_hist = jtu.tree_map(np.array, prior_list_tf)
+        self.beliefs_hist = const_beliefs
+        
+        return self.vfe_hist, self.kld_hist, self.bs_hist, self.un_hist
+        
     def generate_const_beliefs(self, env, qs, dt):
         # もととなる動きを入れたenvを作成
         tmp_env = copy.deepcopy(env)
@@ -999,8 +1281,10 @@ class RobotPerceptor:
 
         for f in range(num_factors):
             # beliefs
-            beliefs_f = np.stack([b[f] for b in self.beliefs_hist], axis=0)
+            beliefs_f = np.stack([b[f] for b in self.beliefs_hist], axis=0) # (T, batch_size, num_states[f])
             beliefs_mean = beliefs_f.mean(axis=1)  # (T, num_states[f])
+            # else:
+            #     beliefs_mean = beliefs_f
             ax_belief = axes[f][0] if num_factors > 1 else axes[0]
             sns.heatmap(
                 beliefs_mean.T,
@@ -1016,12 +1300,15 @@ class RobotPerceptor:
 
             # qs
             qs_f = np.stack([q[f] for q in self.qs_hist], axis=0)
+            # if len(qs_f.shape())==3:
             qs_mean = qs_f.mean(axis=1)
+            # else:
+            #     qs_mean = qs_f
             ax_qs = axes[f][1] if num_factors > 1 else axes[1]
             sns.heatmap(
                 qs_mean.T,
                 ax=ax_qs,
-                cmap="magma",
+                cmap="viridis",
                 cbar=True,
                 cbar_kws={"label": "Estimated probability (qs)"},
                 xticklabels=10 if T > 10 else T,
@@ -1056,32 +1343,60 @@ def update_agent(
         past_actions=actions,
         qs_hist=infer_args[1]
     )
+
+  # デバッグ用
+
+    past_qs = infer_args[1]
+    empirical_prior = infer_args[0]
+    if past_qs is not None:
+        # time軸に沿って concat
+        empirical_prior_exp = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), empirical_prior)
+        past_beliefs = jtu.tree_map(lambda x, y: jnp.concatenate([x, y], axis=1), past_qs, empirical_prior_exp)
+    else:
+        past_beliefs = jtu.tree_map(lambda x: jnp.expand_dims(x, axis=1), empirical_prior)
+    diff = jtu.tree_map(
+        lambda p, q: None if (p is None or q is None) else jnp.max(jnp.abs(p - q)),
+        past_beliefs,
+        current_qs
+    )
+
     # 推定の結果が current_qs
-    beliefs = current_qs
+    # 推定後の現時刻の認識を抽出
+    # posterior = jtu.tree_map(lambda x: x[:, -1, :], current_qs)
+    posterior = jtu.tree_map(lambda x: x[:, -1], current_qs)
+    # 事前分布も明示的に取得
+    prior = infer_args[0]
 
-    # bsもkldのように別計算する試み（pymdpの変更が反映されない？）
-    # res = agents.calc_KLD_past_currentqs(infer_args[0], infer_args[1], current_qs)
-    # print(res)
-    # kld = jnp.mean(jnp.stack(res["kld"], axis=0), axis=0)
-    # bs  = jnp.mean(jnp.stack(res["bs"],  axis=0), axis=0)
 
-    # kldは別計算
+    # kld,bsは別計算
     kld = agents.calc_KLD_past_currentqs(infer_args[0], infer_args[1], current_qs)
-    kld = jnp.mean(jnp.stack(jtu.tree_leaves(kld), axis=0), axis=0)
-
     bs = agents.calc_BS_past_currentqs(infer_args[0], infer_args[1], current_qs)
-    bs = jnp.mean(jnp.stack(jtu.tree_leaves(bs), axis=0), axis=0)
+    
+    # この処理はほかの指標と同時にやる
+    # kld = jnp.mean(jnp.stack(jtu.tree_leaves(kld), axis=0), axis=0)
+    # bs = jnp.mean(jnp.stack(jtu.tree_leaves(bs), axis=0), axis=0)
 
     # vfe, bs, unをすべての状態因子について足し合わせる
     # これらの形状は (batch_size, T, num_factors) なので、num_factors軸で足し合わせる
     # なお、beliefsは (batch_size, T, num_factors, num_states[factor]) の形状をしている
     # なお、qsは (batch_size, T, num_factors, num_states[factor]) の形状をしている
     # 結果として (batch_size, T) の形状になる
+
+    """
+    ここでfactorの次元を潰して平均をとる。
+    各指標は、(batch_size, T)形状の葉をもつlist.
+    この処理によって、(batch_size, T)形状のndarrayになる。
+    """
     vfe = jnp.mean(jnp.stack(jtu.tree_leaves(vfe), axis=0), axis=0)
-    # bs = jnp.mean(jnp.stack(jtu.tree_leaves(bs), axis=0), axis=0)
-    # kld = jnp.mean(jnp.stack(jtu.tree_leaves(kld2), axis=0), axis=0)
+    bs = jnp.mean(jnp.stack(jtu.tree_leaves(bs), axis=0), axis=0)
+    kld = jnp.mean(jnp.stack(jtu.tree_leaves(kld), axis=0), axis=0)
     un = jnp.mean(jnp.stack(jtu.tree_leaves(un), axis=0), axis=0)
 
+    # これは間違い
+    # vfe = jnp.mean(jnp.stack(jtu.tree_leaves(jtu.tree_map(lambda x: x[:, -1, :], vfe)), axis=0), axis=0)
+    # bs = jnp.mean(jnp.stack(jtu.tree_leaves(jtu.tree_map(lambda x: x[:, -1, :], bs)), axis=0), axis=0)
+    # kld = jnp.mean(jnp.stack(jtu.tree_leaves(jtu.tree_map(lambda x: x[:, -1, :], kld2)), axis=0), axis=0)
+    # un = jnp.mean(jnp.stack(jtu.tree_leaves(jtu.tree_map(lambda x: x[:, -1, :], un)), axis=0), axis=0)
 
     # kldの計算
     # kldはすべての状態について足し合わせたものを得る
@@ -1099,17 +1414,18 @@ def update_agent(
     # バッチサイズに基づいてランダムキーを分割
     batch_keys = jr.split(batch_keys[0], batch_size)
     # 行動をサンプリング(ダミーで一通りのみの行動を生成)
-    dummy_q_pi, _neg_efe = agents.infer_policies(beliefs)
+    dummy_q_pi, _neg_efe = agents.infer_policies(current_qs)
     next_action = jnp.zeros((dummy_q_pi.shape[0], len(agents.num_controls)), dtype=int)
     if actions is not None:
         actions = jnp.concatenate([actions, jnp.expand_dims(next_action, -2)], -2)
     else:
         actions = jnp.expand_dims(next_action, -2)
 
-    # 観測、信念、行動の履歴を更新
+    # 観測、信念、行動の履歴の長さを制限
     observations = tree_map(lambda x: x[:, -num_history:], observations)
     current_qs = tree_map(lambda x: x[:, -num_history:], current_qs)
     actions = tree_map(lambda x: x[:, -num_history:], actions)
+
 
     # Dの更新
     agents = tree_at(lambda x: x.D, agents, tree_map(lambda x: x[:, 0], current_qs))
@@ -1139,7 +1455,7 @@ def update_agent(
         'kld': kld,
         'bs': bs,
         'un': un,
-    }, current_qs, beliefs
+    }, posterior, prior, diff
 
 
 # 可視化関数
