@@ -9,6 +9,8 @@ from functools import partial
 # import jax.numpy as jnp
 from jax import jit, vmap
 
+from scipy.optimize import minimize
+
 class Optimizer:
     def __init__(
             self,
@@ -55,6 +57,90 @@ class Optimizer:
         self.best_particle = None
         self.best_qs = None
 
+    def initialize_beliefs(self, jerk=0.0, energy=0.0, torque_change=0.0, compensate_grav=True, maxiter=1000):
+        """
+        ScipyのL-BFGS-Bを用いた勾配ベースの最適化によってジャークやエネルギー消費量を最小化し、
+        事前分布として設定する。
+        """
+        best_cost, best_particle, best_qs = self.scipy_optimize(jerk=jerk, energy=energy, torque_change=torque_change, compensate_grav=compensate_grav, maxiter=maxiter)
+        self.set_const_beliefs(best_qs)
+        return best_cost, best_particle, best_qs
+
+    def scipy_optimize(self, jerk=0.0, energy=0.0, torque_change=0.0, compensate_grav=True, maxiter=1000):
+        """
+        ScipyのL-BFGS-Bを用いた勾配ベースの最適化。
+        ジャークやエネルギー消費量を最小化する。
+        """
+        # 1. 初期解の生成
+        # 線形補間から求めた粒子を初期値として使用
+        initial_particle, _ = self.linear_base_particle()
+        dimensions = initial_particle.size
+        
+        # 2. 可動域（ボックス制約）の設定
+        bounds = []
+        lowers = self.limits[0]
+        uppers = self.limits[1]
+        
+        # 中間ノット点の可動域をバインドとして設定
+        # 変数の次元数 = (num_knots - 2) * nq
+        for i in range(self.num_knots - 2):
+            for j in range(self.model.nq):
+                bounds.append((lowers[j], uppers[j]))
+        
+        # 3. 目的関数の定義（PSOのobjectiveから再利用）
+        # ここでは、簡略化のため、VFEなどの複雑な項は除外
+        def objective_scipy(particle):
+            # particle (x) はフラットなベクトル
+            qs, grads = qs_from_particle(particle,
+                                model=self.model,
+                                time_steps=self.timesteps,
+                                start=self.start,
+                                end=self.end,
+                                limits=self.limits,
+                                num_knots=self.num_knots,
+                                free_end_knot=False, # 終点固定を前提
+                                grad1=True,
+                                grad2=True,
+                                grad3=True
+                                )
+
+            dqs, ddqs, dddqs = grads
+            total_cost = 0.0
+            data = self.model.createData()
+
+            if jerk != 0.0:
+                total_cost += jerk * compute_total_jerk(dddqs, self.dt)
+
+            if energy != 0.0:
+                # 重力補償ありで評価
+                total_cost += energy * compute_total_energy(self.model, data, qs, dqs, ddqs, self.dt, compensate_grav=compensate_grav)
+
+            if torque_change != 0.0:
+                total_cost += torque_change * compute_total_torque_change(self.model, data, qs, dqs, ddqs, self.dt)
+                
+            return total_cost
+
+        # 4. 最適化の実行
+        result = minimize(
+            objective_scipy,
+            initial_particle, # 初期姿勢
+            method='L-BFGS-B', # 境界制約付きの最適化手法を選択
+            bounds=bounds,     # ボックス制約
+            options={'maxiter': maxiter, 'disp': True} # ログ表示
+        )
+        
+        # 5. 結果の格納
+        best_cost = result.fun
+        best_particle = result.x
+        best_qs = qs_from_particle(
+            best_particle, self.model, self.timesteps, self.start, 
+            self.end, self.limits, num_knots=self.num_knots, free_end_knot=False)
+        
+        print(f"\nOptimization Status: {result.message}")
+        print(f"Final Cost: {best_cost:.4f}")
+
+        return best_cost, best_particle, best_qs
+    
 
     def set_const_beliefs(self, qs):
         self.const_beliefs_qs = qs
@@ -62,43 +148,43 @@ class Optimizer:
         return
 
 
-    def optimize_torque_change(self):
-        dimensions = (self.num_knots - 2) * self.model.nq
-        options = {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
-        optimizer = ps.single.GlobalBestPSO(n_particles=self.n_particles, dimensions=dimensions, options=options)
+    # def optimize_torque_change(self):
+    #     dimensions = (self.num_knots - 2) * self.model.nq
+    #     options = {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+    #     optimizer = ps.single.GlobalBestPSO(n_particles=self.n_particles, dimensions=dimensions, options=options)
 
-        def objective(particles, model, data, start, end, limits, time_steps, dt, num_knots):
-            # particles.shape = (n_particles, dimensions)
-            costs = []
-            for particle in particles:
-                # particle.shape = ((num_knots - 2)*nq,)
-                # フラットなベクトルを(time_steps, nq)に変換
-                qs = qs_from_particle(particle,
-                                    model=model,
-                                    time_steps=time_steps,
-                                    start=start,
-                                    end=end,
-                                    limits=limits,
-                                    num_knots=num_knots)
-                cost = compute_total_torque_change(model, data, qs, dt)
-                costs.append(cost)
-            return np.array(costs)
+    #     def objective(particles, model, data, start, end, limits, time_steps, dt, num_knots):
+    #         # particles.shape = (n_particles, dimensions)
+    #         costs = []
+    #         for particle in particles:
+    #             # particle.shape = ((num_knots - 2)*nq,)
+    #             # フラットなベクトルを(time_steps, nq)に変換
+    #             qs = qs_from_particle(particle,
+    #                                 model=model,
+    #                                 time_steps=time_steps,
+    #                                 start=start,
+    #                                 end=end,
+    #                                 limits=limits,
+    #                                 num_knots=num_knots)
+    #             cost = compute_total_torque_change(model, data, qs, dt)
+    #             costs.append(cost)
+    #         return np.array(costs)
 
-        # partialでほかの引数をバインド
-        obj_func = partial(objective,
-                        model=self.model,
-                        data=self.data,
-                        start=self.start,
-                        end=self.end,
-                        limits=self.limits,
-                        time_steps=self.timesteps,
-                        dt=self.dt,
-                        num_knots=self.num_knots)
+    #     # partialでほかの引数をバインド
+    #     obj_func = partial(objective,
+    #                     model=self.model,
+    #                     data=self.data,
+    #                     start=self.start,
+    #                     end=self.end,
+    #                     limits=self.limits,
+    #                     time_steps=self.timesteps,
+    #                     dt=self.dt,
+    #                     num_knots=self.num_knots)
         
-        self.best_cost, self.best_particle = optimizer.optimize(obj_func, iters=100)
-        self.best_qs = qs_from_particle(self.best_particle, self.model, self.timesteps, self.start, self.end, self.limits, num_knots=self.num_knots)
+    #     self.best_cost, self.best_particle = optimizer.optimize(obj_func, iters=100)
+    #     self.best_qs = qs_from_particle(self.best_particle, self.model, self.timesteps, self.start, self.end, self.limits, num_knots=self.num_knots)
         
-        return self.best_cost, self.best_particle, self.best_qs
+    #     return self.best_cost, self.best_particle, self.best_qs
     
     def linear_base_particle(self):
 
@@ -145,88 +231,89 @@ class Optimizer:
         return base_particle, base_qs
 
     
-    def optimize_old(self, jerk=0.0, energy=0.0, torque_change=0.0, vfe=0.0, kld=0.0, bs=0.0, un=0.0, vfe_var=0.0, iters=1):
-        """
-        複数のコスト指標を重み付け線形和として最適化する。
+    # def optimize_old(self, jerk=0.0, energy=0.0, torque_change=0.0, vfe=0.0, kld=0.0, bs=0.0, un=0.0, vfe_var=0.0, iters=1):
+    #     """
+    #     複数のコスト指標を重み付け線形和として最適化する。
 
-        Parameters:
-            jerk (float): 見かけ上のジャークの重み
-            energy (float): トルクエネルギー消費の重み
-            torque_change (float): トルク変化量の重み
-            vfe (float): 収束後の変分自由エネルギーの重み
-            iters (int): 最適化反復回数
+    #     Parameters:
+    #         jerk (float): 見かけ上のジャークの重み
+    #         energy (float): トルクエネルギー消費の重み
+    #         torque_change (float): トルク変化量の重み
+    #         vfe (float): 収束後の変分自由エネルギーの重み
+    #         iters (int): 最適化反復回数
 
-        Returns:
-            best_cost (float): 最適コスト値
-            best_particle (np.ndarray): 最適パラメータ
-            best_qs (np.ndarray): 最適軌道
-        """
-        dimensions = (self.num_knots - 2) * self.model.nq
-        options = {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
-        optimizer = ps.single.GlobalBestPSO(n_particles=self.n_particles, dimensions=dimensions, options=options)
+    #     Returns:
+    #         best_cost (float): 最適コスト値
+    #         best_particle (np.ndarray): 最適パラメータ
+    #         best_qs (np.ndarray): 最適軌道
+    #     """
+    #     dimensions = (self.num_knots - 2) * self.model.nq
+    #     options = {'c1': 1.5, 'c2': 1.5, 'w': 0.9}
+    #     optimizer = ps.single.GlobalBestPSO(n_particles=self.n_particles, dimensions=dimensions, options=options)
 
-        def objective(particles, model, agent, env, data, start, end, limits, time_steps, dt, num_knots,
-                    jerk_weight, energy_weight, torque_change_weight, vfe_weight, kld_weight, bs_weight, un_weight, vfe_var_weight):
-            costs = []
-            for particle in particles:
-                qs = qs_from_particle(particle, model=model, time_steps=time_steps,
-                                    start=start, end=end, limits=limits, num_knots=num_knots)
+    #     def objective(particles, model, agent, env, data, start, end, limits, time_steps, dt, num_knots,
+    #                 jerk_weight, energy_weight, torque_change_weight, vfe_weight, kld_weight, bs_weight, un_weight, vfe_var_weight):
+    #         costs = []
+    #         for particle in particles:
+    #             qs = qs_from_particle(particle, model=model, time_steps=time_steps,
+    #                                 start=start, end=end, limits=limits, num_knots=num_knots)
                 
-                total_cost = 0.0
+    #             total_cost = 0.0
 
-                if jerk_weight != 0.0:
-                    jerk_cost = compute_total_jerk(qs, dt)
-                    total_cost += jerk_weight * jerk_cost
+    #             if jerk_weight != 0.0:
+    #                 jerk_cost = compute_total_jerk(qs, dt)
+    #                 total_cost += jerk_weight * jerk_cost
 
-                if energy_weight != 0.0:
-                    energy_cost = compute_total_energy(model, data, qs, dt)
-                    total_cost += energy_weight * energy_cost
+    #             if energy_weight != 0.0:
+    #                 energy_cost = compute_total_energy(model, data, qs, dt)
+    #                 total_cost += energy_weight * energy_cost
 
-                if torque_change_weight != 0.0:
-                    torque_change_cost = compute_total_torque_change(model, data, qs, dt)
-                    total_cost += torque_change_weight * torque_change_cost
+    #             if torque_change_weight != 0.0:
+    #                 torque_change_cost = compute_total_torque_change(model, data, qs, dt)
+    #                 total_cost += torque_change_weight * torque_change_cost
                 
-                if vfe != 0.0 or kld != 0.0 or bs != 0.0 or un != 0.0:
-                    vfes, klds, bss, uns = compute_total_vfe(agent, env, qs, dt)
-                    total_vfe = sum(vfes)
-                    total_kld = sum(klds)
-                    total_bs = sum(bss)
-                    total_un = sum(uns)
-                    total_vfe_var = np.var(vfes)
-                    total_cost += vfe_weight * total_vfe + kld_weight * total_kld + bs_weight * total_bs + un_weight * total_un + vfe_var_weight*total_vfe_var
+    #             if vfe != 0.0 or kld != 0.0 or bs != 0.0 or un != 0.0:
+    #                 vfes, klds, bss, uns = compute_total_vfe(agent, env, qs, dt)
+    #                 total_vfe = sum(vfes)
+    #                 total_kld = sum(klds)
+    #                 total_bs = sum(bss)
+    #                 total_un = sum(uns)
+    #                 total_vfe_var = np.var(vfes)
+    #                 total_cost += vfe_weight * total_vfe + kld_weight * total_kld + bs_weight * total_bs + un_weight * total_un + vfe_var_weight*total_vfe_var
 
-                costs.append(total_cost)
+    #             costs.append(total_cost)
 
-            return np.array(costs)
+    #         return np.array(costs)
 
-        obj_func = partial(objective,
-                        model=self.model,
-                        agent=self.agent,
-                        env=self.env,
-                        data=self.data,
-                        start=self.start,
-                        end=self.end,
-                        limits=self.limits,
-                        time_steps=self.timesteps,
-                        dt=self.dt,
-                        num_knots=self.num_knots,
-                        jerk_weight=jerk,
-                        energy_weight=energy,
-                        torque_change_weight=torque_change,
-                        vfe_weight=vfe,
-                        kld_weight=kld,
-                        bs_weight=bs,
-                        un_weight=un,
-                        vfe_var_weight=vfe_var
-                        )
+    #     obj_func = partial(objective,
+    #                     model=self.model,
+    #                     agent=self.agent,
+    #                     env=self.env,
+    #                     data=self.data,
+    #                     start=self.start,
+    #                     end=self.end,
+    #                     limits=self.limits,
+    #                     time_steps=self.timesteps,
+    #                     dt=self.dt,
+    #                     num_knots=self.num_knots,
+    #                     jerk_weight=jerk,
+    #                     energy_weight=energy,
+    #                     torque_change_weight=torque_change,
+    #                     vfe_weight=vfe,
+    #                     kld_weight=kld,
+    #                     bs_weight=bs,
+    #                     un_weight=un,
+    #                     vfe_var_weight=vfe_var
+    #                     )
 
-        self.best_cost, self.best_particle = optimizer.optimize(obj_func, iters=iters)
-        self.best_qs = qs_from_particle(self.best_particle, self.model, self.timesteps, self.start,
-                                        self.end, self.limits, num_knots=self.num_knots)
+    #     self.best_cost, self.best_particle = optimizer.optimize(obj_func, iters=iters)
+    #     self.best_qs = qs_from_particle(self.best_particle, self.model, self.timesteps, self.start,
+    #                                     self.end, self.limits, num_knots=self.num_knots)
 
-        return self.best_cost, self.best_particle, self.best_qs
+    #     return self.best_cost, self.best_particle, self.best_qs
     
-    def optimize(self, jerk=0.0, energy=0.0, torque_change=0.0, vfe=0.0, kld=0.0, bs=0.0, un=0.0, vfe_var=0.0, iters=1, compensate_grav=True, end_penalty=0.0, temporal_approach_cost=0.0):
+
+    def optimize(self, targets=None, jerk=0.0, energy=0.0, torque_change=0.0, vfe=0.0, kld=0.0, bs=0.0, un=0.0, vfe_var=0.0, iters=1, compensate_grav=True, end_penalty=0.0, temporal_approach_cost=0.0, MIN_RANGE_DENOMINATOR=1e-6):
         """
     粒子群最適化（PSO: Particle Swarm Optimization）を用いて、
     ロボットアームの最適軌道を求める関数。
@@ -237,6 +324,11 @@ class Optimizer:
 
     Parameters
     ----------
+    targets = {
+    "ig": {"target": ig_target_value, "min": ig_min_range, "max": ig_max_range},
+    "energy": {"target": energy_target_value, "min": energy_min_range, "max": energy_max_range},
+    # ... 他の指標
+}
     jerk : float, default=0.0
         ジャーク（二階微分の変化量）に基づく滑らかさのコスト係数。
 
@@ -301,6 +393,7 @@ class Optimizer:
     >>> print("最適コスト:", best_cost)
     >>> visualize_trajectory(model, best_qs)
     """
+
         # end_penaltyが有効な場合、終点ノットも最適化変数に含める
         if end_penalty > 0.0:
             # num_knots - 1 個の中間ノット + 終点ノット
@@ -323,7 +416,7 @@ class Optimizer:
 
 
         def particle_objective(particle):
-            qs = qs_from_particle(
+            qs, grads = qs_from_particle(
                 particle, 
                 model=self.model, 
                 time_steps=self.timesteps,
@@ -331,25 +424,30 @@ class Optimizer:
                 end=self.end, 
                 limits=self.limits, 
                 num_knots=self.num_knots,
-                free_end_knot=free_end_knot
+                free_end_knot=free_end_knot,
+                grad1=True,
+                grad2=True,
+                grad3=True
                 )
+            
+            dqs, ddqs, dddqs = grads
 
             data = self.model.createData()
             total_cost = 0.0
 
             if jerk != 0.0:
                 # total_cost += jerk * compute_jerk_fn(qs)
-                total_cost += jerk * compute_total_jerk(qs, self.dt)
+                total_cost += jerk * compute_total_jerk(dddqs, self.dt)
 
             if energy != 0.0:
                 # total_cost += energy * compute_energy_fn(qs)
-                total_cost += energy * compute_total_energy(self.model, data, qs, self.dt, compensate_grav=compensate_grav)
+                total_cost += energy * compute_total_energy(self.model, data, qs, dqs, ddqs, self.dt, compensate_grav=compensate_grav)
 
             if torque_change != 0.0:
-                total_cost += torque_change * compute_total_torque_change(self.model, data, qs, self.dt)
+                total_cost += torque_change * compute_total_torque_change(self.model, data, qs, dqs, ddqs, self.dt)
 
             if vfe != 0.0 or kld != 0.0 or bs != 0.0 or un != 0.0:
-                vfes, klds, bss, uns = compute_total_vfe(self.agent, self.env, qs, self.dt)
+                vfes, klds, bss, uns = compute_total_vfe(self.agent, self.env, qs, self.dt, self.const_beliefs)
                 total_vfe = sum(vfes)/len(qs)
                 total_kld = sum(klds)/len(qs)
                 total_bs = sum(bss)/len(qs)
@@ -384,7 +482,91 @@ class Optimizer:
                 end_error = np.linalg.norm(qs[-1] - self.end)**2
                 total_cost += end_penalty * end_error
 
-            
+            # targetの値に収束させるための目的関数
+            if targets:
+                TARGET_METRICS = targets
+                target_label_candidates = [
+                    "jerk", 
+                    "energy", 
+                    "torque_change", 
+                    "vfe", 
+                    "kld", 
+                    "bs", 
+                    "un", 
+                    "vfe_var"
+                ]
+                vfe_elements = [
+                    "vfe", 
+                    "kld", 
+                    "bs", 
+                    "un", 
+                    "vfe_var"
+                ]
+                
+                # 共通部分を計算し、共通要素が存在するかを確認
+                # 共通部分の要素数が 0 より大きければ True
+                # if bool(target_keys_set.intersection(vfe_set)):
+
+                # # targets辞書のキーの集合を取得
+                # target_keys_set = set(targets.keys())
+                
+                # # vfe_elements_listの集合を取得
+                # vfe_set = set(vfe_elements)
+                
+                vfes, klds, bss, uns = compute_total_vfe(self.agent, self.env, qs, self.dt, self.const_beliefs)
+                total_vfe = sum(vfes)/len(qs)
+                total_kld = sum(klds)/len(qs)
+                total_bs = sum(bss)/len(qs)
+                total_un = sum(uns)/len(qs)
+                total_vfe_var = np.var(vfes)
+
+                current_values = {
+                "jerk": compute_total_jerk(dddqs, self.dt), 
+                "energy": compute_total_energy(self.model, data, qs, dqs, ddqs,self.dt, compensate_grav=compensate_grav), 
+                "torque_change": compute_total_torque_change(self.model, data, qs, dqs, ddqs, self.dt), 
+                "vfe": total_vfe, 
+                "kld": total_kld, 
+                "bs": total_bs, 
+                "un": total_un, 
+                "vfe_var": total_vfe_var
+                }
+
+                
+                # 目的関数構築
+                for metric in targets:
+                    
+                    # 1. 最適化対象がターゲット条件に存在するか確認 (関係ないタグは自動的に無視)
+                    if metric not in target_label_candidates:
+                        continue 
+                    
+                    # 2. ターゲット、現在値、正規化範囲を取得
+                    target_data = targets[metric]
+                    current_val = current_values.get(metric)
+                    
+                    # 必須キーの確認
+                    if not all(key in target_data for key in ['target', 'min', 'max']):
+                        print(f"Warning: Target data for '{metric}' is incomplete. Skipping.")
+                        continue
+                    if current_val is None:
+                        continue
+                        
+                    target_val = target_data['target']
+                    min_range = target_data['min']
+                    max_range = target_data['max']
+                    
+                    # 3. 正規化範囲の計算とゼロ除算回避
+                    metric_range = max_range - min_range
+                    
+                    if metric_range <= MIN_RANGE_DENOMINATOR:
+                        continue
+                        
+                    # 4. 正規化された偏差の計算
+                    # NormalizedDeviance = |current - target| / Range
+                    normalized_deviation = np.abs(current_val - target_val) / metric_range
+                    
+                    # 5. 重み付きコストの加算
+                    weighted_cost = normalized_deviation
+                    total_cost += weighted_cost
 
             return total_cost
 
@@ -407,19 +589,20 @@ class Optimizer:
         return self.best_cost, self.best_particle, self.best_qs
 
 # 軌跡からサプライズ（収束したvfe）を計算する関数
-def compute_total_vfe(agent, env, qs, dt):
+def compute_total_vfe(agent, env, qs, dt, const_beliefs):
     env.computeAllobs(qs,dt)
     time_steps = len(qs)
-    vfes, klds, bss, uns = agent.run_perception_for_optimize(timesteps = time_steps, env = env)
+    # vfes, klds, bss, uns = agent.run_perception_for_optimize(timesteps = time_steps, env = env)
+    vfes, klds, bss, uns = agent.bayse_estimate(timesteps=time_steps, env=env, const_beliefs=const_beliefs)
     return vfes, klds, bss, uns
 
 
 # 軌跡からジャークを計算する関数
-def compute_total_jerk(qs, dt):
-    dqs = np.gradient(qs, dt, axis=0)
-    ddqs = np.gradient(dqs, dt, axis=0)
-    dddq = np.gradient(ddqs, dt, axis=0)
-    jerk_cost = np.sum(dddq**2) * dt
+def compute_total_jerk(dddqs, dt):
+    # dqs = np.gradient(qs, dt, axis=0)
+    # ddqs = np.gradient(dqs, dt, axis=0)
+    # dddqs = np.gradient(ddqs, dt, axis=0)
+    jerk_cost = np.sum(dddqs**2) * dt
     return jerk_cost
 
 # def make_compute_total_jerk_jax(dt):
@@ -432,12 +615,12 @@ def compute_total_jerk(qs, dt):
 #     return compute
 
 # 軌跡からエネルギーを計算する関数
-def compute_total_energy(model, data, qs, dt, compensate_grav=True):
+def compute_total_energy(model, data, qs, dqs, ddqs, dt, compensate_grav=True):
     total_energy = 0.0
     time_steps = len(qs)
-    # jnpは使うとダメ
-    dqs = np.gradient(qs, dt, axis=0)
-    ddqs = np.gradient(dqs, dt, axis=0)
+    # # jnpは使うとダメ
+    # dqs = np.gradient(qs, dt, axis=0)
+    # ddqs = np.gradient(dqs, dt, axis=0)
 
     for q, dq, ddq in zip(qs, dqs, ddqs):
         # 全体のトルク
@@ -478,10 +661,10 @@ def compute_total_energy(model, data, qs, dt, compensate_grav=True):
 #     return compute
 
 # 動力学トルクの変化
-def compute_total_torque_change(model, data, qs, dt):
+def compute_total_torque_change(model, data, qs, dqs, ddqs, dt):
     taus = []
-    dqs = np.gradient(qs, dt, axis=0)
-    ddqs = np.gradient(dqs, dt, axis=0)
+    # dqs = np.gradient(qs, dt, axis=0)
+    # ddqs = np.gradient(dqs, dt, axis=0)
 
     for q, dq, ddq in zip(qs, dqs, ddqs):
         pin.computeAllTerms(model, data, q, dq)
