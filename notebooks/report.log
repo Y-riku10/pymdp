@@ -378,3 +378,7 @@
 2025-12-22 05:01:46,839 - matplotlib.animation - INFO - MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 640x480 -pix_fmt rgba -framerate 30.0 -loglevel error -i pipe: -vcodec h264 -pix_fmt yuv420p -y /home/rikut/py_venvs/my_sim_project/stimuli_final/final_sim_dof3_20251217_021445/stimuli/practice/vfe_mid.mp4
 2025-12-22 05:01:50,086 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
 2025-12-22 05:01:50,087 - matplotlib.animation - INFO - MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 640x480 -pix_fmt rgba -framerate 30.0 -loglevel error -i pipe: -vcodec h264 -pix_fmt yuv420p -y /home/rikut/py_venvs/my_sim_project/stimuli_final/final_sim_dof3_20251217_021445/stimuli/practice/vfe_max.mp4
+2025-12-22 07:09:30,343 - jax._src.xla_bridge - INFO - Unable to initialize backend 'tpu': INTERNAL: Failed to open libtpu.so: libtpu.so: cannot open shared object file: No such file or directory
+2025-12-22 07:09:31,877 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.HTMLWriter'>
+2025-12-22 07:10:36,034 - matplotlib.animation - INFO - Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2025-12-22 07:10:36,036 - matplotlib.animation - INFO - MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 640x480 -pix_fmt rgba -framerate 30 -loglevel error -i pipe: -vcodec h264 -pix_fmt yuv420p -y /home/rikut/py_venvs/my_sim_project/results/sim_dof2_20251220_151004/config/const_beliefs.mp4

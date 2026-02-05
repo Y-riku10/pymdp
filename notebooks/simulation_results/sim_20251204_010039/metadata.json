@@ -1,0 +1,31 @@
+{
+    "run_id": "sim_20251204_010039",
+    "environment_settings": {
+        "dof": 2,
+        "velocity_scale": 5.0,
+        "effort_scale": 10.0,
+        "fps": 30,
+        "sec": 5,
+        "time_steps": 150,
+        "dt": 0.03333333333333333,
+        "num_knots": 9
+    },
+    "generative_model_settings": {
+        "bin_M": 30,
+        "eps_tolerance": 0.001,
+        "variance_a": 0.03333333333333333,
+        "variance_b": 0.03333333333333333,
+        "variance_min": 0.0,
+        "variance_max": 3.141592653589793,
+        "n_divisions": 500,
+        "num_iterations": 16,
+        "num_observations": [
+            30,
+            30,
+            30,
+            30,
+            30,
+            30
+        ]
+    }
+}
