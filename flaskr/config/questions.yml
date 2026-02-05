@@ -1,48 +1,228 @@
+# questions.yml
+
+#　各質問のtextは消して、ラベルだけを提示するのでよいかも
+# 一般に使われる形容詞対を調べる
+
+# 動きの評価
+# 質問の文章を消して、ラベルだけを提示するバージョン
+# 本多さんの実験に寄せたバージョン
+# 本多さんはinterestの反対をboredomとし、退屈-面白さの2極で質問していたが、
+# この質問では退屈ではないが面白くもない動き（ただ激しいだけの動き）でも面白いと評価せざるを得なかったのでは？
+# 現に、vfeに対して面白さが単調に増加する結果となっていた。
+
 questions:
   - id: q1
-    text: "この動きは予測しやすいですか？"
-    type: sd5
-    labels: ["予測しにくい", "やや予測しにくい", "どちらともいえない", "やや予測しやすい", "予測しやすい"]
-    note: "動きの展開が読み取りやすいか"
+    category: Motion_Eval
+    data_key: interest
+    text: "この動きは面白いですか？"
+    type: sd7
+    labels: ["全く面白くない", "やや面白くない", "どちらともいえない", "やや面白い", "とても面白い"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "印象に残りやすく興味深い"
 
   - id: q2
-    text: "この動きは飽きにくいですか？"
-    type: sd5
-    labels: ["飽きやすい", "やや飽きやすい", "どちらともいえない", "やや飽きにくい", "飽きにくい"]
-    note: "見続けていたくなるか"
+    category: Motion_Eval
+    data_key: boredom
+    text: "この動きは退屈ですか？"
+    type: sd7
+    labels: ["全く退屈しない", "あまり退屈しない", "どちらともいえない", "やや退屈する", "とても退屈する"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "単調でつまらない"
 
   - id: q3
-    text: "この動きは面白く興味を引きますか？"
-    type: sd5
-    labels: ["退屈な", "やや退屈な", "どちらともいえない", "やや興味深い", "興味深い"]
-    note: "注意を引きつけるか"
+    category: Motion_Eval
+    data_key: confusion
+    text: "この動きは混乱しやすいですか？"
+    type: sd7
+    labels: ["全く混乱しない", "あまり混乱しない", "どちらともいえない", "やや混乱する", "とても混乱する"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "脈絡がなく理解できない"
 
   - id: q4
-    text: "この動きはなめらかで自然ですか？"
-    type: sd5
-    labels: ["ぎこちない", "ややぎこちない", "どちらともいえない", "ややなめらか", "なめらか"]
-    note: "動きのつながりがスムーズか"
+    category: Motion_Eval
+    data_key: predictibity
+    text: "この動きは予測しやすいですか？"
+    type: sd7
+    labels: ["全く予測しやすくない", "あまり予測しやすくない", "どちらともいえない", "やや予測しやすい", "とても予測しやすい"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "どこへ向かうか分かりやすい"
 
   - id: q5
-    text: "この動きは力強く活発ですか？"
-    type: sd5
-    labels: ["弱々しい", "やや弱々しい", "どちらともいえない", "やや力強い", "力強い"]
-    note: "エネルギッシュさや勢いの印象"
+    category: Motion_Eval
+    data_key: beauty
+    text: "この動きは美しいですか？"
+    type: sd7
+    labels: ["全く美しくない", "あまり美しくない", "どちらともいえない", "やや美しい", "とても美しい"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "優雅で洗練されている"
 
-  - id: q6
-    text: "この動きには安心感や快適さがありますか？"
-    type: sd5
-    labels: ["不安な", "やや不安な", "どちらともいえない", "やや安心できる", "安心できる"]
-    note: "見ていて落ち着くか"
+# 動きの評価
+# 質問の文章を消して、ラベルだけを提示するバージョン
+# questions:
+#   - id: q1
+#     category: Motion_Eval
+#     data_key: pleasure
+#     text: ""
+#     type: sd5
+#     labels: ["全く快くない", "あまり快くない", "どちらともいえない", "やや快い", "とても快い"]
+#     score_values: [1, 2, 3, 4, 5, 6, 7]
+#     note: ""
+  
+#   - id: q2
+#     category: Motion_Eval
+#     data_key: boredom
+#     text: " "
+#     type: sd5
+#     labels: ["全く退屈しない", "あまり退屈しない", "どちらともいえない", "やや退屈する", "とても退屈する"]
+#     score_values: [1, 2, 3, 4, 5, 6, 7]
+#     note: ""
 
-  # - id: q7
-  #   text: "この動きには納得感がありますか？"
+#   - id: q3
+#     category: Motion_Eval
+#     data_key: interest
+#     text: " "
+#     type: sd5
+#     labels: ["全く興味深くない", "あまり興味深くない", "どちらともいえない", "やや興味深い", "とても興味深い"]
+#     score_values: [1, 2, 3, 4, 5, 6, 7]
+#     note: ""
+
+#   - id: q4
+#     category: Motion_Eval
+#     data_key: confusion
+#     text: " "
+#     type: sd5
+#     labels: ["全く混乱しない", "あまり混乱しない", "どちらともいえない", "やや混乱する", "とても混乱する"]
+#     score_values: [1, 2, 3, 4, 5, 6, 7]
+#     note: ""
+
+#   - id: q5
+#     category: Motion_Eval
+#     data_key: beauty
+#     text: " "
+#     type: sd5
+#     labels: ["全く美しくない", "あまり美しくない", "どちらともいえない", "やや美しい", "とても美しい"]
+#     score_values: [1, 2, 3, 4, 5, 6, 7]
+#     note: ""
+
+# 保留: これはメカメカしいプロダクトについての評価をした例があればそれを引っ張ってくるべき
+  # - id: q6
+  #   category: Motion_Eval
+  #   data_key: strength
+  #   text: "この動きは力強いですか？"
   #   type: sd5
-  #   labels: ["違和感がある", "やや違和感がある", "どちらともいえない", "やや納得できる", "納得できる"]
-  #   note: "動きの展開や意図が理解しやすいか"
+  #   labels: ["弱々しい", "やや弱々しい", "どちらともいえない", "やや力強い", "力強い"]
+  #   score_values: [1, 2, 3, 4, 5]
+  #   note: "エネルギー消費量や力学的な強さの印象に対応します"
 
-  - id: q8
-    text: "この動きは好ましいですか？"
+
+# 知的好奇心尺度（西川一二・雨宮俊彦, 2015）
+questions_curiosity:
+  # 拡散的好奇心 (Diversive Curiosity: DC)
+  - id: IC_DC1
+    category: Curiosity_Scale
+    data_key: dc_diversive1
+    text: "新しいことに挑戦することは好きだ"
     type: sd5
-    labels: ["好ましくない", "やや好ましくない", "どちらともいえない", "やや好ましい", "好ましい"]
-    note: "全体的な印象としての好意度"
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "新奇性への積極的な関心を測定（拡散的好奇心）"
+
+  - id: IC_DC2
+    category: Curiosity_Scale
+    data_key: dc_diversive2
+    text: "誰もやったことのない物事にとても興味がある"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "新奇・未知への探索意欲を測定（拡散的好奇心）"
+
+  - id: IC_DC3
+    category: Curiosity_Scale
+    data_key: dc_diversive3
+    text: "どこに行っても、新しい物事や経験を探す"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "新しい刺激や体験を求める傾向を測定（拡散的好奇心）"
+
+  - id: IC_DC4
+    category: Curiosity_Scale
+    data_key: dc_diversive4
+    text: "今までやったことのない課題にもよろこんで取り組める"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "課題への挑戦意欲を測定（拡散的好奇心）"
+
+  - id: IC_DC5
+    category: Curiosity_Scale
+    data_key: dc_diversive5
+    text: "新しいアイデアをあれこれ考える"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "発想の柔軟性や創造的探索を測定（拡散的好奇心）"
+
+  - id: IC_DC6
+    category: Curiosity_Scale
+    data_key: dc_diversive6
+    text: "何事にも興味関心が強い"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "広範な興味の強さを測定（拡散的好奇心）"
+
+  # 特殊的好奇心 (Specific Curiosity: SC)
+  - id: IC_SC1
+    category: Curiosity_Scale
+    data_key: sc_specific1
+    text: "はっきりした明快な答えが出るまでずっと考える"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "知的な問題解決への粘り強さを測定（特殊的好奇心）"
+
+  - id: IC_SC2
+    category: Curiosity_Scale
+    data_key: sc_specific2
+    text: "解答を理解できないと気持ちが落ち着かず、なんとか理解しなければと思う"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "理解への欲求と未解決状態の不快感を測定（特殊的好奇心）"
+
+  - id: IC_SC3
+    category: Curiosity_Scale
+    data_key: sc_specific3
+    text: "物事を学ぶ時には、徹底的に調べたい"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "学習過程での深い探究志向を測定（特殊的好奇心）"
+
+  - id: IC_SC4
+    category: Curiosity_Scale
+    data_key: sc_specific4
+    text: "予期しない出来事が起きた時、原因がわかるまで調べる"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "不確実性や矛盾に対する解明欲求を測定（特殊的好奇心）"
+
+  - id: IC_SC5
+    category: Curiosity_Scale
+    data_key: sc_specific5
+    text: "ある考えを理解するために必要な知識をすべて学ばないと満足できない"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "完全な理解を目指す傾向を測定（特殊的好奇心）"
+
+  - id: IC_SC6
+    category: Curiosity_Scale
+    data_key: sc_specific6
+    text: "問題を解くために長時間じっくり考える"
+    type: sd5
+    labels: ["まったくあてはまらない", "あまりあてはまらない", "どちらともいえない", "ややあてはまる", "とてもよくあてはまる"]
+    score_values: [1, 2, 3, 4, 5]
+    note: "粘り強い問題解決姿勢を測定（特殊的好奇心）"

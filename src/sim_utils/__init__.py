@@ -2,3 +2,4 @@
 from .optimize import *
 from .robot import *
 from .perception import *
+from .utils import *

@@ -1,54 +1,92 @@
+/* ==========================================================
+   Global / Layout Styles
+   ========================================================== */
 body {
     margin: 0;
     font-family: sans-serif;
     display: flex;
     flex-direction: column;
     height: 100vh;
+    overflow: hidden; /* メインスクロールを禁止 */
+    background-color: #f9fafb; /* 全体背景を白基調に */
+    color: #1f2937; /* テキスト色 */
 }
 
-.question-header {
-    text-align: center; /* 親コンテナで中央揃え */
-    margin-bottom: 15px;
-}
-
-.question-counter {
-    font-size: 1.0em;   /* 大きめ */
-    font-weight: bold;
-    color: #333
-}
-
-.question-instruction {
-    font-size: 0.7em;     /* 少し小さめ */
-    color: #333;        /* 説明文の色 */
-    margin-top: 5px;
-}
-
-.gif-container {
-    flex: 2;               /* 上部 2/3 */
+.main-content-wrapper {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
     display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden; /* 内部コンテンツのスクロールを制御 */
+}
+
+/* ヘッダー情報 (試行数など) */
+.header-info-wrapper {
+    flex-shrink: 0;
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.8em;
+    color: #6b7280;
+}
+
+/* ==========================================================
+   Experiment Specific (刺激表示エリア: 2/3 固定)
+   ========================================================== */
+.stim-area {
+    height: 66.67vh; /* 💡 2/3の高さに設定 */
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     background: white;
-    min-height: 300px;    /* GIF がなくても高さを確保 */
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1rem;
+    overflow: hidden; /* 画像がはみ出さないように */
 }
 
-.gif-container img {
-    max-width: 90%;
+.stim-container {
+    height: 250px;
+    width: 250px;
+    background-color: #f3f4f6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    overflow: hidden;
+}
+
+.stim-container img {
+    max-width: 100%;
     max-height: 100%;
-    object-fit: contain;    /* GIF の縦横比を保つ */
+    object-fit: contain;
 }
 
+.placeholder-text {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-align: center;
+    padding: 10px;
+}
+
+/* ==========================================================
+   Question / Form Styles (質問フォームエリア: 1/3 スクロール)
+   ========================================================== */
 .form-container {
-    flex: 1;
-    background: white;
-    border-top: 1px solid #ddd;
-    padding: 20px;
-    overflow-y: auto;
+    flex: 1; /* 残りの高さを占有 */
+    overflow-y: auto; /* 💡 スクロールを有効化 */
+    background-color: #f9fafb;
+    padding: 1.5rem 0;
+    /* max-widthはHTML側で制御 */
 }
 
-/* --- 設問ブロック --- */
+/* 設問ブロック */
 .question-block {
-    background: #fafafa;
+    background: white;
     border: 1px solid #ddd;
     border-radius: 6px;
     padding: 12px 16px;
@@ -64,53 +102,99 @@ body {
 .question-text {
     font-weight: bold;
     margin-bottom: 8px;
+    color: #1f2937;
 }
 
-/* --- SD法5段階ボタン群 --- */
-.sd5 {
+/* ==========================================================
+   SD Scales Styles (5段階 / 7段階)
+   ========================================================== */
+.sd-container {
     display: flex;
     justify-content: space-between;
+    margin-top: 5px;
     margin-bottom: 5px;
-    align-items: center;
 }
 
-.sd5 label {
+/* 共通ラベルスタイル */
+.sd-container label {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    font-size: 0.9em;
+    cursor: pointer;
     flex: 1;
-    justify-content: center;
-    gap: 6px;
+    font-size: 0.9em;
+    padding: 5px 0;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    min-width: 30px;
 }
 
-.sd5 input[type="radio"] {
-    margin: 0;
+.sd-container label:hover {
+    background-color: #e5e7eb;
 }
 
-/* --- ボタン --- */
+.sd-container input[type="radio"] {
+    margin: 0 0 5px 0;
+    accent-color: #4b5563; /* ラジオボタンの色をダークグレーに */
+}
+
+/* 5段階スケール (experiment.html用) */
+.sd5 {
+    /* 5等分 */
+}
+
+/* 7段階スケール (survey.html用) */
+.sd7 {
+    /* 7等分 */
+}
+
+/* 評価ラベル（両端のテキスト）コンテナ */
+.sd-labels-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.2;
+}
+
+/* 5段階スケール用ラベルの幅 */
+.sd5-labels > span {
+    text-align: center;
+    flex-basis: 20%;
+    padding: 0 0.25rem;
+}
+
+/* 7段階スケール用ラベルの幅 */
+.sd7-labels > span {
+    text-align: center;
+    flex-basis: 14.28%; /* 100% / 7 */
+    padding: 0 0.25rem;
+}
+
+/* ==========================================================
+   Button Styles
+   ========================================================== */
 button[type="submit"] {
     display: block;
-    margin: 15px 0 0 auto;
+    width: 100%; /* 最大幅いっぱいに */
     padding: 10px 22px;
     font-size: 1em;
-    background-color: #4285f4;
+    background-color: #4b5563; /* ダークグレー */
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s;
+    font-weight: bold;
 }
 
 button[type="submit"]:hover {
-    background-color: #3367d6;
+    background-color: #374151; /* より濃いグレー */
 }
 
-/* --- メッセージ --- */
-.message {
-    color: #e53935;
-    font-weight: bold;
-    text-align: center;
-    margin-top: 10px;
+button[type="submit"]:disabled {
+    background-color: #d1d5db; /* 無効時はライトグレー */
+    cursor: not-allowed;
 }
-
-

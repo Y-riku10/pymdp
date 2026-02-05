@@ -1,4 +1,5 @@
 import pinocchio as pin
+import os
 
 # モデル構築関数
 
@@ -155,413 +156,413 @@ def get_simple_arm(dof=2):
 
 
 
-# 可視化関連
-import os
-import pinocchio as pin
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from IPython.display import HTML, display
+# # 可視化関連
+# import os
+# import pinocchio as pin
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import matplotlib.animation as animation
+# from IPython.display import HTML, display
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-def create_ax_with_scope(scope, base_height=5, equal_aspect=True):
-    """
-    scope に基づいて適切なサイズの Figure/Axes を生成する。
+# def create_ax_with_scope(scope, base_height=5, equal_aspect=True):
+#     """
+#     scope に基づいて適切なサイズの Figure/Axes を生成する。
 
-    Parameters
-    ----------
-    scope : dict
-        {'x': (xmin, xmax), 'y': (ymin, ymax)} の形式で指定。
-    base_height : float, optional
-        図全体の高さ（inch単位）。幅はscopeの比に合わせて自動計算。
-    equal_aspect : bool, optional
-        True の場合、スケールを等しくする（デフォルト: True）。
-    show_grid : bool, optional
-        True の場合、グリッド線を表示（デフォルト: False）。
+#     Parameters
+#     ----------
+#     scope : dict
+#         {'x': (xmin, xmax), 'y': (ymin, ymax)} の形式で指定。
+#     base_height : float, optional
+#         図全体の高さ（inch単位）。幅はscopeの比に合わせて自動計算。
+#     equal_aspect : bool, optional
+#         True の場合、スケールを等しくする（デフォルト: True）。
+#     show_grid : bool, optional
+#         True の場合、グリッド線を表示（デフォルト: False）。
 
-    Returns
-    -------
-    fig : matplotlib.figure.Figure
-    ax : matplotlib.axes.Axes
-    """
+#     Returns
+#     -------
+#     fig : matplotlib.figure.Figure
+#     ax : matplotlib.axes.Axes
+#     """
 
-    # 範囲と比率を計算
-    x_range = scope['x'][1] - scope['x'][0]
-    y_range = scope['y'][1] - scope['y'][0]
-    aspect_ratio = x_range / y_range
+#     # 範囲と比率を計算
+#     x_range = scope['x'][1] - scope['x'][0]
+#     y_range = scope['y'][1] - scope['y'][0]
+#     aspect_ratio = x_range / y_range
 
-    # 図の生成（サイズをscope比に合わせる）
-    fig_width = base_height * aspect_ratio
-    fig, ax = plt.subplots(figsize=(fig_width, base_height))
+#     # 図の生成（サイズをscope比に合わせる）
+#     fig_width = base_height * aspect_ratio
+#     fig, ax = plt.subplots(figsize=(fig_width, base_height))
 
-    # 軸設定
-    ax.set_xlim(scope['x'])
-    ax.set_ylim(scope['y'])
-    if equal_aspect:
-        ax.set_aspect('equal', adjustable='box')
+#     # 軸設定
+#     ax.set_xlim(scope['x'])
+#     ax.set_ylim(scope['y'])
+#     if equal_aspect:
+#         ax.set_aspect('equal', adjustable='box')
 
-    return fig, ax
+#     return fig, ax
 
-def plot_robot_2D(model, q, ax=None, show=True, detail=False, grid=False, scope=None,
-                  title='Robot Arm 2D', plane='xz', max_range=None,
-                  draw_base=True, draw_gripper=True,
-                  base_size=(1.0, 2.0), gripper_size=0.2):
-    """
-    Pinocchioモデルの現在姿勢をmatplotで2Dプロットする関数
-    """
-    # 描画のパラメータ
-    link_lw = 5  # ロボットリンクの線幅
-    link_color = 'black'  # ロボットリンクの色
-    joint_size = 10  # ジョイントの点の大きさ
-    joint_face_color = 'white'  # ジョイントの面の色
-    joint_edge_color = 'black'  # ジョイントの縁の色
-    ee_size = 30  # エンドエフェクタの点の大きさ
-    ee_color = 'red'  # エンドエフェクタの色
-    ee_lw = 5  # エンドエフェクタの線幅
-    base_size = base_size  # 土台のサイズ (幅, 高さ)
-    base_color = 'gray'  # 土台の色
-    base_alpha = 1.0  # 土台の透明度
-    gripper_size = gripper_size  # グリッパのサイズ
-    gripper_color = 'red'  # グリッパの色
-    gripper_lw = 3  # グリッパの線幅
+# def plot_robot_2D(model, q, ax=None, show=True, detail=False, grid=False, scope=None,
+#                   title='Robot Arm 2D', plane='xz', max_range=None,
+#                   draw_base=True, draw_gripper=True,
+#                   base_size=(1.0, 2.0), gripper_size=0.2):
+#     """
+#     Pinocchioモデルの現在姿勢をmatplotで2Dプロットする関数
+#     """
+#     # 描画のパラメータ
+#     link_lw = 5  # ロボットリンクの線幅
+#     link_color = 'black'  # ロボットリンクの色
+#     joint_size = 10  # ジョイントの点の大きさ
+#     joint_face_color = 'white'  # ジョイントの面の色
+#     joint_edge_color = 'black'  # ジョイントの縁の色
+#     ee_size = 30  # エンドエフェクタの点の大きさ
+#     ee_color = 'red'  # エンドエフェクタの色
+#     ee_lw = 5  # エンドエフェクタの線幅
+#     base_size = base_size  # 土台のサイズ (幅, 高さ)
+#     base_color = 'gray'  # 土台の色
+#     base_alpha = 1.0  # 土台の透明度
+#     gripper_size = gripper_size  # グリッパのサイズ
+#     gripper_color = 'red'  # グリッパの色
+#     gripper_lw = 3  # グリッパの線幅
 
 
-    # 順運動学を計算
-    data = model.createData()
-    pin.forwardKinematics(model, data, q)
-    pin.framesForwardKinematics(model, data, q)
+#     # 順運動学を計算
+#     data = model.createData()
+#     pin.forwardKinematics(model, data, q)
+#     pin.framesForwardKinematics(model, data, q)
 
-    # プロット用意
-    if ax is None:
-        fig, ax = create_ax_with_scope(scope)
+#     # プロット用意
+#     if ax is None:
+#         fig, ax = create_ax_with_scope(scope)
 
-    # 各ジョイントの位置を取得
-    positions = [np.array([0.0, 0.0])]  # ワールド原点
+#     # 各ジョイントの位置を取得
+#     positions = [np.array([0.0, 0.0])]  # ワールド原点
 
-    # 平面選択
-    if plane in ('xy', 'yx'):
-        axis_idx = (0, 1)
-    elif plane in ('yz', 'zy'):
-        axis_idx = (1, 2)
-    elif plane in ('zx', 'xz'):
-        axis_idx = (0, 2)
-    else:
-        raise ValueError(f"Unknown plane: {plane}")
-    axis_idx = np.array(axis_idx)
+#     # 平面選択
+#     if plane in ('xy', 'yx'):
+#         axis_idx = (0, 1)
+#     elif plane in ('yz', 'zy'):
+#         axis_idx = (1, 2)
+#     elif plane in ('zx', 'xz'):
+#         axis_idx = (0, 2)
+#     else:
+#         raise ValueError(f"Unknown plane: {plane}")
+#     axis_idx = np.array(axis_idx)
 
-    for i in range(1, model.njoints):
-        pos = data.oMi[i].translation
-        pos = pos[axis_idx]
-        positions.append(pos)
-        if detail:
-            ax.text(pos[0],pos[1], model.names[i])
-    positions = np.array(positions)
+#     for i in range(1, model.njoints):
+#         pos = data.oMi[i].translation
+#         pos = pos[axis_idx]
+#         positions.append(pos)
+#         if detail:
+#             ax.text(pos[0],pos[1], model.names[i])
+#     positions = np.array(positions)
 
   
-    # --- 土台を描画 ---
-    if draw_base:
-        base_w, base_h = base_size
-        base = plt.Rectangle((-base_w/2, -base_h), base_w, base_h, color=base_color, alpha=base_alpha)
-        ax.add_patch(base)
+#     # --- 土台を描画 ---
+#     if draw_base:
+#         base_w, base_h = base_size
+#         base = plt.Rectangle((-base_w/2, -base_h), base_w, base_h, color=base_color, alpha=base_alpha)
+#         ax.add_patch(base)
 
-    # --- グリッパを描画 ---
-    for frame_id, frame in enumerate(model.frames):
-        if frame.name == "ee_tip":
-            ee_pos = data.oMf[frame_id].translation[axis_idx]
-            parent_id = frame.parentJoint
-            parent_pos = data.oMi[parent_id].translation[axis_idx]
-            xs, ys = zip(parent_pos, ee_pos)
+#     # --- グリッパを描画 ---
+#     for frame_id, frame in enumerate(model.frames):
+#         if frame.name == "ee_tip":
+#             ee_pos = data.oMf[frame_id].translation[axis_idx]
+#             parent_id = frame.parentJoint
+#             parent_pos = data.oMi[parent_id].translation[axis_idx]
+#             xs, ys = zip(parent_pos, ee_pos)
             
 
-            if draw_gripper:
-                # エンドエフェクタの向き
-                v = ee_pos - parent_pos
-                v = v / np.linalg.norm(v)
-                n = np.array([-v[1], v[0]])# 法線ベクトル
+#             if draw_gripper:
+#                 # エンドエフェクタの向き
+#                 v = ee_pos - parent_pos
+#                 v = v / np.linalg.norm(v)
+#                 n = np.array([-v[1], v[0]])# 法線ベクトル
 
-                # グリッパのパラメータ設定
-                base_len = gripper_size * 0.5   # 爪の根元部分の長さ
-                tip_len = gripper_size * 0.5    # 折れた先の部分の長さ
-                bend_angle = np.deg2rad(60)     # 折れる角度 [deg]
-                open_angle = np.deg2rad(60)     # 爪の根元開き角度 [deg]
+#                 # グリッパのパラメータ設定
+#                 base_len = gripper_size * 0.5   # 爪の根元部分の長さ
+#                 tip_len = gripper_size * 0.5    # 折れた先の部分の長さ
+#                 bend_angle = np.deg2rad(60)     # 折れる角度 [deg]
+#                 open_angle = np.deg2rad(60)     # 爪の根元開き角度 [deg]
 
-                def R(angle):
-                    return np.array([
-                        [np.cos(angle), -np.sin(angle)],
-                        [np.sin(angle),  np.cos(angle)]
-                    ])
+#                 def R(angle):
+#                     return np.array([
+#                         [np.cos(angle), -np.sin(angle)],
+#                         [np.sin(angle),  np.cos(angle)]
+#                     ])
 
-                # 爪の描画
-                for side in [+1, -1]:
-                    # sideごとの方向を決定
-                    open_dir = R(open_angle*side) @ v
-                    bend_dir = R(bend_angle*(-side)) @ open_dir
+#                 # 爪の描画
+#                 for side in [+1, -1]:
+#                     # sideごとの方向を決定
+#                     open_dir = R(open_angle*side) @ v
+#                     bend_dir = R(bend_angle*(-side)) @ open_dir
                     
-                    # 爪の根元線
-                    base_start = ee_pos
-                    base_end = base_start + open_dir * base_len
+#                     # 爪の根元線
+#                     base_start = ee_pos
+#                     base_end = base_start + open_dir * base_len
 
-                    # 爪の先端線（折れ部分）
-                    tip_end = base_end + bend_dir * tip_len
+#                     # 爪の先端線（折れ部分）
+#                     tip_end = base_end + bend_dir * tip_len
 
-                    gripper_color = 'red'
-                    gripper_lw = 3
+#                     gripper_color = 'red'
+#                     gripper_lw = 3
 
-                    # 描画
-                    ax.plot([base_start[0], base_end[0]], [base_start[1], base_end[1]], 
-                            c=gripper_color, lw=gripper_lw)
-                    ax.plot([base_end[0], tip_end[0]], [base_end[1], tip_end[1]], 
-                            c=gripper_color, lw=gripper_lw)
-                if detail:
-                    ax.text(pos[0], pos[1], frame.name)
+#                     # 描画
+#                     ax.plot([base_start[0], base_end[0]], [base_start[1], base_end[1]], 
+#                             c=gripper_color, lw=gripper_lw)
+#                     ax.plot([base_end[0], tip_end[0]], [base_end[1], tip_end[1]], 
+#                             c=gripper_color, lw=gripper_lw)
+#                 if detail:
+#                     ax.text(pos[0], pos[1], frame.name)
 
-            # エンドエフェクタのリンクを描画
-            ax.plot(xs, ys, c=link_color, linewidth=ee_lw)
-            ax.scatter(ee_pos[0], ee_pos[1], c=ee_color, s=ee_size, marker='o')
+#             # エンドエフェクタのリンクを描画
+#             ax.plot(xs, ys, c=link_color, linewidth=ee_lw)
+#             ax.scatter(ee_pos[0], ee_pos[1], c=ee_color, s=ee_size, marker='o')
 
     
-    # --- ロボットのリンクとジョイントを描画 ---
-    ax.plot(positions[:, 0], positions[:, 1], 'o-', linewidth=link_lw, c=link_color,
-            markersize=joint_size, markerfacecolor=joint_face_color, markeredgecolor=joint_edge_color)
+#     # --- ロボットのリンクとジョイントを描画 ---
+#     ax.plot(positions[:, 0], positions[:, 1], 'o-', linewidth=link_lw, c=link_color,
+#             markersize=joint_size, markerfacecolor=joint_face_color, markeredgecolor=joint_edge_color)
     
-    # 軸設定
-    # 範囲を計算
-    if scope is None:
-        if max_range is None:
-            total_length = np.sum([np.linalg.norm(data.oMi[i].translation - data.oMi[i-1].translation)
-                                for i in range(1, model.njoints)]) + 1.0
-        else:
-            total_length = max_range*1.3
-        xlim = (-total_length, total_length)
-        ylim = (-total_length, total_length)
-    else:
-        xlim, ylim = scope['x'], scope['y']
+#     # 軸設定
+#     # 範囲を計算
+#     if scope is None:
+#         if max_range is None:
+#             total_length = np.sum([np.linalg.norm(data.oMi[i].translation - data.oMi[i-1].translation)
+#                                 for i in range(1, model.njoints)]) + 1.0
+#         else:
+#             total_length = max_range*1.3
+#         xlim = (-total_length, total_length)
+#         ylim = (-total_length, total_length)
+#     else:
+#         xlim, ylim = scope['x'], scope['y']
 
-    ax.set_xlim(xlim[0], xlim[1])
-    ax.set_ylim(ylim[0], ylim[1])
-    ax.set_aspect('equal', adjustable='box')
-    ax.grid(grid)
-    if detail:
-        ax.set_title(title)
-        ax.set_xlabel('X' if axis_idx[0]==0 else 'Y')
-        ax.set_ylabel('Y' if axis_idx[1]==1 else 'Z')
-    else:
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
+#     ax.set_xlim(xlim[0], xlim[1])
+#     ax.set_ylim(ylim[0], ylim[1])
+#     ax.set_aspect('equal', adjustable='box')
+#     ax.grid(grid)
+#     if detail:
+#         ax.set_title(title)
+#         ax.set_xlabel('X' if axis_idx[0]==0 else 'Y')
+#         ax.set_ylabel('Y' if axis_idx[1]==1 else 'Z')
+#     else:
+#         ax.set_xticks([])
+#         ax.set_yticks([])
+#         ax.set_xticklabels([])
+#         ax.set_yticklabels([])
 
-    if show:
-        plt.show()
+#     if show:
+#         plt.show()
 
-    return ax
+#     return ax
 
 
-# ロボットのスケルトンを描画する関数(3D)
-def plot_robot_3D(model, q, ax=None, show=True, detail=False, title='Robot Arm 3D', max_range=None):
-    # データオブジェクト生成
-    data = model.createData()
+# # ロボットのスケルトンを描画する関数(3D)
+# def plot_robot_3D(model, q, ax=None, show=True, detail=False, title='Robot Arm 3D', max_range=None):
+#     # データオブジェクト生成
+#     data = model.createData()
     
-    # 順運動学計算
-    pin.forwardKinematics(model, data, q)
-    pin.framesForwardKinematics(model, data, q)
+#     # 順運動学計算
+#     pin.forwardKinematics(model, data, q)
+#     pin.framesForwardKinematics(model, data, q)
 
-    if ax is None:
-        # 3Dプロットセットアップ
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+#     if ax is None:
+#         # 3Dプロットセットアップ
+#         fig = plt.figure()
+#         ax = fig.add_subplot(111, projection='3d')
 
 
-    # ジョイントの位置記録用
-    joint_positions = []
+#     # ジョイントの位置記録用
+#     joint_positions = []
 
-    for joint_id in range(1, model.njoints):
-        oMi = data.oMi[joint_id]  # ワールド座標系での姿勢
-        pos = oMi.translation
-        joint_positions.append(pos)
-        # 親ジョイントとの接続線を引く
-        parent_id = model.parents[joint_id]
-        if parent_id > 0:  # universe以外
-            parent_pos = data.oMi[parent_id].translation
-            xs, ys, zs = zip(parent_pos, pos)
-            ax.plot(xs, ys, zs, c='b', linewidth=5)
+#     for joint_id in range(1, model.njoints):
+#         oMi = data.oMi[joint_id]  # ワールド座標系での姿勢
+#         pos = oMi.translation
+#         joint_positions.append(pos)
+#         # 親ジョイントとの接続線を引く
+#         parent_id = model.parents[joint_id]
+#         if parent_id > 0:  # universe以外
+#             parent_pos = data.oMi[parent_id].translation
+#             xs, ys, zs = zip(parent_pos, pos)
+#             ax.plot(xs, ys, zs, c='b', linewidth=5)
 
-        # ジョイントの位置に点を打つ
-        ax.scatter(pos[0], pos[1], pos[2], c='gold', s=50, marker='o')
-        if detail:
-            ax.text(pos[0], pos[1], pos[2], model.names[joint_id])
+#         # ジョイントの位置に点を打つ
+#         ax.scatter(pos[0], pos[1], pos[2], c='gold', s=50, marker='o')
+#         if detail:
+#             ax.text(pos[0], pos[1], pos[2], model.names[joint_id])
       
-    # エンドエフェクタも描画
-    for frame_id, frame in enumerate(model.frames):
-        if frame.name=="ee_tip":
-            parent_id = frame.parentJoint
-            pos = data.oMf[frame_id].translation
-            parent_pos = data.oMi[parent_id].translation
-            xs, ys, zs = zip(parent_pos, pos)
-            ax.plot(xs, ys, zs, c='r',linewidth=3)
-            ax.scatter(pos[0], pos[1], pos[2], c='r', s=30, marker='o')
-            if detail:
-                ax.text(pos[0], pos[1], pos[2], frame.name)
+#     # エンドエフェクタも描画
+#     for frame_id, frame in enumerate(model.frames):
+#         if frame.name=="ee_tip":
+#             parent_id = frame.parentJoint
+#             pos = data.oMf[frame_id].translation
+#             parent_pos = data.oMi[parent_id].translation
+#             xs, ys, zs = zip(parent_pos, pos)
+#             ax.plot(xs, ys, zs, c='r',linewidth=3)
+#             ax.scatter(pos[0], pos[1], pos[2], c='r', s=30, marker='o')
+#             if detail:
+#                 ax.text(pos[0], pos[1], pos[2], frame.name)
 
-    # 描画範囲設定
-    if max_range is not None:
-        max_range *= 0.7
-        ax.set_xlim([-max_range, max_range])
-        ax.set_ylim([-max_range, max_range])
-        ax.set_zlim([-max_range, max_range])
+#     # 描画範囲設定
+#     if max_range is not None:
+#         max_range *= 0.7
+#         ax.set_xlim([-max_range, max_range])
+#         ax.set_ylim([-max_range, max_range])
+#         ax.set_zlim([-max_range, max_range])
 
-    # グラフ調整
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.set_title('Robot Skeleton')
-    ax.set_box_aspect([1,1,1])  # アスペクト比固定
-    if not detail:
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
-        ax.set_zticklabels([])  # 3Dなら
+#     # グラフ調整
+#     ax.set_xlabel('X')
+#     ax.set_ylabel('Y')
+#     ax.set_zlabel('Z')
+#     ax.set_title('Robot Skeleton')
+#     ax.set_box_aspect([1,1,1])  # アスペクト比固定
+#     if not detail:
+#         ax.set_xticklabels([])
+#         ax.set_yticklabels([])
+#         ax.set_zticklabels([])  # 3Dなら
 
-    if show:
-        plt.show()
-    return ax
+#     if show:
+#         plt.show()
+#     return ax
 
-# 呼び出し例（モデルと状態ベクトルqが必要）
-# plot_robot_skeleton(model, q)
+# # 呼び出し例（モデルと状態ベクトルqが必要）
+# # plot_robot_skeleton(model, q)
 
-def plot_robot_motion(model, qs, dt=0.1, movie=None, savedir='./tmp_movies/', grid=False,
-                      title='', is3d=False, detail=False, plane='xz', scope=None,
-                      draw_base=True, draw_gripper=True,
-                      base_size=(0.5, 0.1), gripper_size=0.2):
-    """
-    ロボットの動きをmatplotでアニメーション表示・保存する関数
+# def plot_robot_motion(model, qs, dt=0.1, movie=None, savedir='./tmp_movies/', grid=False,
+#                       title='', is3d=False, detail=False, plane='xz', scope=None,
+#                       draw_base=True, draw_gripper=True,
+#                       base_size=(0.5, 0.1), gripper_size=0.2):
+#     """
+#     ロボットの動きをmatplotでアニメーション表示・保存する関数
 
-    Parameters
-    ----------
-    model : pinocchio.Model
-        ロボットモデル
-    data : pinocchio.Data
-        ロボットデータ
-    qs : ndarray (T, n)
-        各時刻の関節角度列
-    dt : float
-        シミュレーションの時間刻み [s]
-        0.1  = 10fps(default)
-        0.05 = 20fps
-        0.033= 30fps
-    movie : str or None
-        保存するファイル名。拡張子付き。NoneならJupyter内で表示。
-    """
-    # animationの時間幅に変換
-    interval = dt * 1000 # dt(sec) → interval(msec)
-    # 軌跡の長さ
-    time_steps = qs.shape[0]
-    # fpsを計算
-    fps = 1/dt
-    # 長さを計算
-    duration = time_steps * dt
+#     Parameters
+#     ----------
+#     model : pinocchio.Model
+#         ロボットモデル
+#     data : pinocchio.Data
+#         ロボットデータ
+#     qs : ndarray (T, n)
+#         各時刻の関節角度列
+#     dt : float
+#         シミュレーションの時間刻み [s]
+#         0.1  = 10fps(default)
+#         0.05 = 20fps
+#         0.033= 30fps
+#     movie : str or None
+#         保存するファイル名。拡張子付き。NoneならJupyter内で表示。
+#     """
+#     # animationの時間幅に変換
+#     interval = dt * 1000 # dt(sec) → interval(msec)
+#     # 軌跡の長さ
+#     time_steps = qs.shape[0]
+#     # fpsを計算
+#     fps = 1/dt
+#     # 長さを計算
+#     duration = time_steps * dt
 
-    # robotの最大リーチを計算
-    max_range = 0.0
+#     # robotの最大リーチを計算
+#     max_range = 0.0
 
-    for joint_id in range(1, model.njoints):
-        # この関節の親座標系からの位置ベクトル（トランスレーション）
-        length_vec = model.jointPlacements[joint_id].translation
-        # 選択した軸の長さ成分のノルム（もしくは単純な距離でもOK）
-        link_length = np.linalg.norm(length_vec)
-        max_range += link_length
+#     for joint_id in range(1, model.njoints):
+#         # この関節の親座標系からの位置ベクトル（トランスレーション）
+#         length_vec = model.jointPlacements[joint_id].translation
+#         # 選択した軸の長さ成分のノルム（もしくは単純な距離でもOK）
+#         link_length = np.linalg.norm(length_vec)
+#         max_range += link_length
 
-    for frame_id, frame in enumerate(model.frames):
-        if frame.name=="ee_tip":
-            length_vec = model.frames[frame_id].placement.translation
-            link_length = np.linalg.norm(length_vec)
-            max_range += link_length
+#     for frame_id, frame in enumerate(model.frames):
+#         if frame.name=="ee_tip":
+#             length_vec = model.frames[frame_id].placement.translation
+#             link_length = np.linalg.norm(length_vec)
+#             max_range += link_length
 
-    # プロットセットアップ
-    if is3d:
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-    else:
-        fig, ax = plt.subplots(figsize=(6,6))
+#     # プロットセットアップ
+#     if is3d:
+#         fig = plt.figure()
+#         ax = fig.add_subplot(111, projection='3d')
+#     else:
+#         fig, ax = plt.subplots(figsize=(6,6))
 
-    # アニメーション更新関数
-    def update(frame):
-        ax.cla()
-        q = qs[frame]
-        time = frame * dt
-        if is3d:
-            plot_robot_3D(model, q, ax=ax, show=False, detail=detail, max_range=max_range)
-            # 軸範囲の取得
-            xlim = ax.get_xlim()
-            ylim = ax.get_ylim()
-            zlim = ax.get_zlim()
-            # 軸範囲の右上あたりに表示
-            ax.text(
-                xlim[1]*0.7, ylim[1]*0.9, zlim[1]*0.9,  # 表示位置
-                f"Time: {time:.2f} s / {duration:.2f} s\nFrame: {frame} / {time_steps}\nFPS: {fps:.1f}",  
-                ha='left', va='top',
-                fontsize=7, color='black',
-                bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3', alpha=0.8)
-                )
-        else:
-            plot_robot_2D(model, q, ax=ax, show=False, detail=detail, grid=grid, scope=scope,
-                          title=title, plane=plane, max_range=max_range,
-                          draw_base=draw_base, draw_gripper=draw_gripper,
-                          base_size=base_size, gripper_size=gripper_size)
-            xlim = ax.get_xlim()
-            ylim = ax.get_ylim()
+#     # アニメーション更新関数
+#     def update(frame):
+#         ax.cla()
+#         q = qs[frame]
+#         time = frame * dt
+#         if is3d:
+#             plot_robot_3D(model, q, ax=ax, show=False, detail=detail, max_range=max_range)
+#             # 軸範囲の取得
+#             xlim = ax.get_xlim()
+#             ylim = ax.get_ylim()
+#             zlim = ax.get_zlim()
+#             # 軸範囲の右上あたりに表示
+#             ax.text(
+#                 xlim[1]*0.7, ylim[1]*0.9, zlim[1]*0.9,  # 表示位置
+#                 f"Time: {time:.2f} s / {duration:.2f} s\nFrame: {frame} / {time_steps}\nFPS: {fps:.1f}",  
+#                 ha='left', va='top',
+#                 fontsize=7, color='black',
+#                 bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3', alpha=0.8)
+#                 )
+#         else:
+#             plot_robot_2D(model, q, ax=ax, show=False, detail=detail, grid=grid, scope=scope,
+#                           title=title, plane=plane, max_range=max_range,
+#                           draw_base=draw_base, draw_gripper=draw_gripper,
+#                           base_size=base_size, gripper_size=gripper_size)
+#             xlim = ax.get_xlim()
+#             ylim = ax.get_ylim()
 
-            if detail:
-                ax.text(
-                    xlim[1]*0.7, ylim[1]*0.9, 
-                    f"Time: {time:.2f} s / {duration:.2f} s\nFrame: {frame} / {time_steps}\nFPS: {fps:.1f}", 
-                    ha='left', va='top',
-                    fontsize=7, color='black',
-                    bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3', alpha=0.8)
-                    )
-        return ax,
+#             if detail:
+#                 ax.text(
+#                     xlim[1]*0.7, ylim[1]*0.9, 
+#                     f"Time: {time:.2f} s / {duration:.2f} s\nFrame: {frame} / {time_steps}\nFPS: {fps:.1f}", 
+#                     ha='left', va='top',
+#                     fontsize=7, color='black',
+#                     bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3', alpha=0.8)
+#                     )
+#         return ax,
 
-    ani = animation.FuncAnimation(
-        fig, update, frames=time_steps, interval=interval, blit=False
-    )
+#     ani = animation.FuncAnimation(
+#         fig, update, frames=time_steps, interval=interval, blit=False
+#     )
 
-    if movie is None:
-        print("Now preparing html without saving")
-        display(HTML(ani.to_jshtml()))
+#     if movie is None:
+#         print("Now preparing html without saving")
+#         display(HTML(ani.to_jshtml()))
     
-    if movie is not None:
-        #movieの拡張子を判別してそれにあった処理をする
-        # movieの拡張子を取得
-        base, ext = os.path.splitext(movie)
-        os.makedirs(savedir, exist_ok=True)
+#     if movie is not None:
+#         #movieの拡張子を判別してそれにあった処理をする
+#         # movieの拡張子を取得
+#         base, ext = os.path.splitext(movie)
+#         os.makedirs(savedir, exist_ok=True)
 
-        if ext == '':
-            # 拡張子がなければ .gif を付けて保存
-            ext = '.gif'
-            writer='pillow'
-        elif ext.lower() in ['.gif']:
-            writer='pillow'
-        elif ext.lower() in ['.mp4', '.mov', '.avi']:
-            writer='ffmpeg'
-        else:
-            # それ以外なら test_motion.gif にする
-            ext = '.gif'
-            movie = 'test_motion'
-            writer = 'pillow'
-            print("Unsupported extension — saving as 'test_motion.gif'...")
-        # パスを構成
-        filepath = savedir + movie + ext
-        print(f"saving as '{filepath}'...")
-        ani.save(filepath, writer=writer, fps=fps)
-        print(f"saved as {movie}")
-    return
+#         if ext == '':
+#             # 拡張子がなければ .gif を付けて保存
+#             ext = '.gif'
+#             writer='pillow'
+#         elif ext.lower() in ['.gif']:
+#             writer='pillow'
+#         elif ext.lower() in ['.mp4', '.mov', '.avi']:
+#             writer='ffmpeg'
+#         else:
+#             # それ以外なら test_motion.gif にする
+#             ext = '.gif'
+#             movie = 'test_motion'
+#             writer = 'pillow'
+#             print("Unsupported extension — saving as 'test_motion.gif'...")
+#         # パスを構成
+#         filepath = savedir + movie + ext
+#         print(f"saving as '{filepath}'...")
+#         ani.save(filepath, writer=writer, fps=fps)
+#         print(f"saved as {movie}")
+#     return
 
 
 
 
 # スプライン関連
 import numpy as np
-from scipy.interpolate import PchipInterpolator, CubicSpline
+from scipy.interpolate import BSpline, PchipInterpolator, CubicSpline
 import pinocchio as pin
 import pyswarms as ps
 
@@ -603,8 +604,117 @@ def same_limits(nq, lower=-np.pi, upper=np.pi):
     limits = [lowers, uppers]
     return np.array(limits)
 
+
+from typing import Tuple, List, Optional, Union, Any
+Array = np.ndarray 
+
+def random_qs_from_base(
+    model: Any, 
+    time_steps: int, 
+    start: Array, 
+    end: Array, 
+    base_particle: Array, 
+    var: float, 
+    limits: Optional[Union[List[Array], Array]] = None, 
+    seed: int = 0,
+    type: str = "B-spline", # スプライン補間タイプの追加
+    grad1: bool = False, 
+    grad2: bool = False, 
+    grad3: bool = False,
+    particle_return: bool = False
+) -> Union[Array, Tuple[Array, List[Array]]]:
+    """
+    ベースとなる制御点 (base_particle) に正規ノイズ (N(0, var)) を加えて、
+    新しいスプライン軌跡を生成する。軌跡の生成には qs_from_particle を利用する。
+
+    Parameters
+    ----------
+    model : pin.Model
+        Pinocchioロボットモデル。
+    time_steps : int
+        総時間ステップ数 T。
+    start : ndarray
+        初期姿勢 q_start。
+    end : ndarray
+        目標姿勢 q_end。
+    base_particle : ndarray
+        ノイズを加える元となる中間ノットの集合。
+    var : float
+        ノイズの標準偏差 (正規分布 N(0, var))。
+    limits : list of ndarray | ndarray | None
+        関節可動域 [lowers, uppers]。
+    seed : int, default=0
+        乱数シード。
+    type : str, default="cubic"
+        スプライン補間の種類 ('cubic', 'pchip', 'B-spline')。
+    grad1, grad2, grad3 : bool, default=False
+        それぞれ 1, 2, 3 階微分の出力を要求するかどうか。
+
+    Returns
+    -------
+    qs : ndarray (T, nq)
+        生成された関節角度軌跡。
+    grads : list of ndarray (オプション)
+        [dqs, ddqs, dddqs] の順で、要求された微分が格納されたリスト。
+    """
+    
+    # 始点と終点の形状を確認 (qs_from_particleにもassertはあるが、念のため)
+    q_shape = pin.neutral(model).shape
+    assert start.shape == q_shape, f"start.shape {start.shape} must match model's q_shape {q_shape}"
+    assert end.shape == q_shape, f"end.shape {end.shape} must match model's q_shape {q_shape}"
+
+    # ランダムシード初期化
+    np.random.seed(seed)
+
+    # 1. base_particle にノイズを加えて noisy_particle を生成
+    # base_particle は、全ての中間ノットを結合した平坦な配列であると仮定
+    
+    # ノイズを生成 (base_particleと同じ形状)
+    total_noise = np.random.normal(loc=0, scale=var, size=len(base_particle))
+    
+    # ノイズを加えた新しい particle を作成
+    noisy_particle = base_particle + total_noise
+
+    # **補足: 可動域によるクリッピングが必要な場合はここで実装**
+    # nq = model.nq
+    # num_intermediate_knots = len(base_particle) // nq
+    # limits_low, limits_high = limits # limitsの形式が正しいと仮定
+    # for j in range(nq):
+    #     start_idx = num_intermediate_knots * j
+    #     end_idx = num_intermediate_knots * (j + 1)
+    #     noisy_particle[start_idx:end_idx] = np.clip(
+    #         noisy_particle[start_idx:end_idx], limits_low[j], limits_high[j]
+    #     )
+    
+    # 2. num_knots を計算 (qs_from_particleの計算ロジックに合わせる)
+    # free_end_knot=False なので、中間ノットの数 = len(base_particle) // nq
+    num_intermediate_knots = len(base_particle) // model.nq
+    num_knots = num_intermediate_knots + 2
+
+    # 3. qs_from_particle を呼び出す
+    # この関数は、終点が固定であることを前提とするため、free_end_knot=False を指定。
+    result = qs_from_particle(
+        particle=noisy_particle,
+        model=model,
+        time_steps=time_steps,
+        start=start,
+        end=end,
+        limits=limits,
+        num_knots=num_knots,
+        type=type,
+        free_end_knot=False, # 終点ノットは base_particle に含まれていない前提
+        grad1=grad1,
+        grad2=grad2,
+        grad3=grad3
+    )
+    if particle_return:
+        return result, noisy_particle
+    else:
+        return result
+
+
 # ベースとなる制御点にノイズを加えて生成するバージョン
-def random_qs_from_base(model, time_steps, start, end, base_particle, var, limits=None, seed=0):
+def old_random_qs_from_base(model, time_steps, start, end, base_particle, var, limits=None, seed=0):
     # 始点と終点の形状を確認
     q_shape = pin.neutral(model).shape
     assert start.shape == q_shape, f"start.shape {start.shape} and end.shape {end.shape} must match model's q_shape {q_shape}"
@@ -713,7 +823,7 @@ def random_qs_spline(model, time_steps, start, end, limits=None, num_knots=5, se
         qs[:, j] = q_traj
     return qs
 
-def qs_from_particle(particle, model, time_steps, start, end, limits, num_knots=5, free_end_knot=False, grad1=False, grad2=False, grad3=False):
+def qs_from_particle(particle, model, time_steps, start, end, limits, num_knots=5, type="cubic", free_end_knot=False, grad1=False, grad2=False, grad3=False):
     """
     len(particle) = (num_knots - 2) * nq
     """
@@ -783,32 +893,73 @@ def qs_from_particle(particle, model, time_steps, start, end, limits, num_knots=
             control_values[-1] = end[j] # 終点姿勢を固定値として使用
             control_values[1:-1] = particle_segment # 中間ノットのみ代入
 
+        if type=="B-spline":
+            k = 3
+            N = num_knots # 制御点の数
+            
+            t_min = control_times[0]
+            t_max = control_times[-1]
+            
+            # SciPyの要求 M = N + k + 1 を満たすノットベクトルを構成する
 
+            # 内部ノットの数 num_internal_knots = N - k + 1
+            num_internal_knots = N - k + 1
+            
+            if num_internal_knots <= 0:
+                # 制御点が次数+1 (4) 未満の場合はエラー
+                raise ValueError(
+                    f"B-spline (k={k}) を使用するには、制御点数 ({N}) が {k+1} 以上必要です。"
+                )
+            
+            # 内部ノットの時間値を均等に配置 (num_internal_knots 個)
+            # control_times の範囲を使用
+            t_internal = np.linspace(t_min, t_max, num=num_internal_knots)
+            
+            # 境界ノット k 回の重複を作成
+            t_boundary_start = np.full(k, t_min)
+            t_boundary_end = np.full(k, t_max)
+            
+            # ノットベクトルの結合 (長さ M = k + num_internal_knots + k = N + k + 1)
+            # t_internal の要素がそのまま内部ノットとなります。
+            # 例: [t0(3回), t0, t1, t2, ..., tN(3回)] (t0, tN は t_internal の端点)
+            t_vector = np.concatenate([t_boundary_start, t_internal, t_boundary_end])
+
+            # BSplineオブジェクトの生成
+            spline = BSpline(t_vector, control_values, k)
+        
+        # Pchip補完(C1連続性しかないのでddqs, dddqsが不連続になる)
+        elif type=="pchip":
+            spline = PchipInterpolator(control_times, control_values)
+        
         # CubicSpline補完
-        cs = PchipInterpolator(control_times, control_values)
-        # cs = CubicSpline(control_times, control_values, bc_type='clamped')
+        elif type=="cubic":
+            spline = CubicSpline(control_times, control_values, bc_type='not-a-knot')
 
         # 時系列データ生成
-        q_traj = cs(times)
+        q_traj = spline(times)
         qs[:, j] = q_traj
 
         if grad1:
-            dq_traj = cs.derivative(1)(times)
+            dq_traj = spline(times, nu=1)
             dqs[:, j] = dq_traj
-            grads.append(dqs)
         
         if grad2:
-            ddq_traj = cs.derivative(2)(times)
+            ddq_traj = spline(times, nu=2)
             ddqs[:, j] = ddq_traj
-            grads.append(ddqs)
 
         if grad3:
-            dddq_traj = cs.derivative(3)(times)
+            dddq_traj = spline(times, nu=3)
             dddqs[:, j] = dddq_traj
-            grads.append(dddqs)
-        
-        if grad1 or grad2 or grad3:
-            return qs, grads
+
+    if grad1:
+        grads.append(dqs)
+    if grad2:
+        grads.append(ddqs)
+    if grad3:
+        grads.append(dddqs)
+
+    if grad1 or grad2 or grad3:
+        return qs, grads
 
     return qs
 
@@ -1048,37 +1199,3 @@ def ik_se3_solver(model, data, frame_id, target_placement):
 #     return torque_change_cost
 
 
-
-from PIL import Image
-import os
-
-def get_keyframes(filepath, num_samples, output_dir=None):
-    """
-    
-    """
-    # GIFファイルのパス
-    gif_path = filepath
-    gif_dir = os.path.dirname(gif_path)
-    gif_name = os.path.splitext(os.path.basename(gif_path))[0]
-
-     # 出力先フォルダのパスを作成
-    output_dir = os.path.join(gif_dir, f"{gif_name}_keyframes")
-    os.makedirs(output_dir, exist_ok=True)
-
-    # GIFを開く
-    img = Image.open(gif_path)
-
-    # 全フレーム数の取得
-    total_frames = img.n_frames
-    print(f'全フレーム数: {total_frames}')
-
-    # 等間隔のフレーム番号を計算（はじめと終わり含む）
-    frame_indices = [round(i * (total_frames - 1) / (num_samples - 1)) for i in range(num_samples)]
-    print(f'取り出すフレーム番号: {frame_indices}')
-
-    # 指定したフレームを保存
-    for i, frame_index in enumerate(frame_indices):
-        img.seek(frame_index)  # 指定フレームへ
-        frame = img.convert("RGB")  # RGB変換（必要なら）
-        frame.save(os.path.join(output_dir, f'frame_{i}.png'))
-    print('完了しました。')

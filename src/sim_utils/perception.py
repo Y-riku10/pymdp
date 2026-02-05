@@ -26,6 +26,8 @@ from pymdp.jax import inference
 
 import pinocchio as pin
 
+from typing import List, Any
+
 # 観測のためのrobotArm環境を定義
 class RobotArmEnv:
     def __init__(
@@ -309,7 +311,8 @@ class RobotPerceptor:
         self.A_dependencies = [[f] for f in range(self.num_modalities)] # A行列の依存関係を定義
 
         # B行列の依存関係を定義
-        if Bdepends:
+        self.Bdepends_flag = Bdepends
+        if self.Bdepends_flag:
             if sincos_encoding:
                 assert self.modality_per_joint >= 2
                 if self.modality_per_joint <= 2:
@@ -387,6 +390,43 @@ class RobotPerceptor:
         self.FEparam = None # 変分自由エネルギーのパラメータを格納する辞書型データ
 
         self.diff_hist = [] # past_qs - current_qsの差分の時系列データ
+
+    def get_params(self) -> dict:
+        """Agentのハイパーパラメータを辞書形式で返す"""
+        params = {
+                # 1. 基本パラメータ
+                'num_iter': self.num_iter,              # mmpの反復回数
+                'batch_size': self.batch_size,          # バッチサイズ
+                'num_history': self.num_history,        # 考慮する履歴の長さ
+                'eps': self.eps,                        # 観測後のノイズ
+                
+                # 2. 生成モデルの構造パラメータ
+                'num_obs': self.num_obs,                # 観測変数の次元
+                'num_states': self.num_states,          # 状態変数の次元
+                'modality_per_joint': self.modality_per_joint, # 各関節のモダリティ数
+                'sincos_encoding': self.sincos_encoding, # sincosエンコーディング使用フラグ
+                'Bdepends_flag': self.Bdepends_flag,     # Bdependsの初期値（True/False）を推測
+
+                # 3. 分散パラメータ (検証・展開後の値)
+                'Avars_validated': self.Avars,          # 尤度の分散 (リスト/Array)
+                'Bvars_validated': self.Bvars,          # 遷移の分散 (リスト/Array)
+
+                # 4. 行列の初期化設定
+                'Ainit': self.Ainit,
+                'Binit': self.Binit,
+                'Dinit': self.Dinit,
+
+                # 5. 派生構造パラメータ (再現に必須)
+                'dof': self.dof,                        # ロボットの自由度
+                'num_modalities': self.num_modalities,
+                'num_factors': self.num_factors,
+                'A_dependencies': self.A_dependencies,  # A行列の依存関係
+                'B_dependencies': self.B_dependencies,  # B行列の依存関係
+                
+                # NOTE: 'noise' (観測ノイズ) は __init__ の引数ですが、self.noise として保存されていないため、
+                # このメソッドでは取得できません。もし再現に必要であれば、__init__内で self.noise = noise を追加してください。
+            }
+        return params
 
     def reset(self):
         """

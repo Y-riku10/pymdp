@@ -1,0 +1,30 @@
+==================================================
+🚀 OPTIMIZATION RESULT PREVIEW (Scipy_L-BFGS-B)
+==================================================
+## 1. 最終結果とステータス (Quick Look)
+   - 最小コスト (Best Cost): 202.282270
+   - 収束ステータス: True
+   - 終了メッセージ: CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
+   - 最終メトリクス: { 'jerk': 135.7248, 'energy': 30.9602, 'torque_change': 202.2823 }
+   - 最適軌道 (qs) サイズ: (150, 2)
+
+## 2. 最適化設定
+   - コスト関数 (Cost Func): N/A
+   - オプティマイザ: Scipy_L-BFGS-B
+   - プロセス設定 (Params): { 'num_knots': 9, 'maxiter': 10000000000.0000, 'ftol': 0.0000, 'random_seed': 1 }
+
+## 3. 計算量と履歴
+   - 反復回数 (nit): 242
+   - 関数評価回数 (nfev): 4095
+   - コスト履歴: なし (0 points)
+
+## 4. ロボットと軌道パラメータ (再現用)
+   - 自由度 (DOF): 2
+   - モデルキー: simple_arm_dof2
+   - 総時間: 5.00 s (150 steps)
+   - 重力補償: False
+   - 初期/目標姿勢: Start: Shape (2,), [-1.1160466426530655, -1.0120793649128257], End: Shape (2,), [1.1160466426530655, 1.0120793649128257]
+
+## 5. Perception Agentパラメータ
+   - Agent設定: 無効
+   - Agent Params: {}
