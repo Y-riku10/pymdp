@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>休憩</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- 外部CSSファイルをリンク -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-white p-10 rounded-xl shadow-2xl text-center">
+        <h1 class="text-4xl font-extrabold mb-4 text-gray-800">休憩時間 (5分間)</h1>
+        <p class="text-gray-600 text-lg mb-6">後半の実験に進む前に、リラックスしてください。</p>
+        
+        <div id="countdown-timer" class="text-6xl font-mono mb-8 text-gray-800 bg-gray-100 p-4 rounded-lg inline-block border border-gray-300">05:00</div>
+        
+        <p class="text-gray-400 text-sm">タイマーがゼロになると、自動で後半を開始します。準備ができたら、待たずに再開ボタンを押しても構いません。</p>
+
+        <!-- main.pyの/break_timeへPOSTするフォームに変更 -->
+        <form id="break-form" method="POST" action="{{ url_for('break_time') }}">
+            <button type="submit"
+               class="mt-8 inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-xl transition duration-200 shadow-lg shadow-blue-500/50">
+                後半を今すぐ再開する
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const timerDisplay = document.getElementById('countdown-timer');
+        const breakForm = document.getElementById('break-form');
+        const duration = 5 * 60; // 5分 = 300秒
+        let timeRemaining = duration;
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function updateTimer() {
+            if (timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                timerDisplay.textContent = "00:00";
+                // 休憩終了後、自動でフォームを送信し、後半を再開
+                breakForm.submit(); 
+                return;
+            }
+            timerDisplay.textContent = formatTime(timeRemaining);
+            timeRemaining--;
+        }
+
+        const timerInterval = setInterval(updateTimer, 1000);
+        updateTimer(); // 初回表示
+    </script>
+</body>
+</html>

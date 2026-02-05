@@ -1,0 +1,172 @@
+<!-- 基準動作を確認し、その後にメイン動作を評価する。
+ステップ間には指示画面が表示される。 -->
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>刺激評価</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-white w-screen h-screen">
+
+
+  <div id="pre-reference-phase" class="w-full h-full flex justify-center items-center bg-white hidden">
+    <p class="text-4xl font-bold text-gray-800 tracking-widest">基準となる動きを提示します</p>
+  </div>
+
+
+  <div id="reference-phase" class="w-full h-full flex justify-center items-center hidden">
+
+      <div class="flex items-center justify-center">
+      
+      <div class="w-1/2 h-full">
+        <img src="{{ standard_path }}" class="w-full h-full object-cover">
+      </div>
+
+      <div class="w-1/2 h-full">
+        <img src="{{ chaotic_path }}" class="w-full h-full object-cover">
+      </div>
+
+    </div>
+  </div>
+
+
+  <div id="interval-phase" class="w-full h-full flex justify-center items-center bg-white hidden">
+    <p class="text-4xl font-bold text-gray-800 tracking-widest">次は、評価対象の動きです</p>
+  </div>
+
+
+  <div id="main-phase" class="w-full h-full flex justify-center items-center hidden">
+    <div class="flex items-center justify-center bg-white">
+      <div class="w-full h-full">
+        <img src="{{ main_path }}" class="w-full h-full object-cover">
+      </div>
+    </div>
+  </div>
+
+  <div id="question-phase" class="hidden w-full h-full flex flex-col items-start overflow-y-auto">
+
+    <div class="w-full bg-white p-6 flex flex-col items-center justify-center">
+      <div class="w-full max-w-2xl justify-center bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">評価フェーズ</h1>
+        <p class="mb-8 text-center text-gray-600">この動きについて、以下の各項目で当てはまるものを選んでください。</p>
+        <form method="POST" action="{{ url_for('experiment_process') }}" id="evaluation-form">
+          <input type="hidden" name="rt_evaluation" id="rt-evaluation-input" value="">
+
+          <div class="space-y-3">
+            {% for q in questions %}
+              <div class="question-block bg-gray-50 p-5 rounded-lg border border-gray-200">
+                
+                <p class="text-lg font-semibold text-gray-800 mb-3">
+                  {{ loop.index }}. {{ q.text }}
+                </p>
+                
+                {% if q.labels and q.labels|length >= 5 %}
+                <div class="flex justify-between text-base font-medium mt-2 pt-2 border-b border-gray-300">
+                  <span class="text-gray-600">{{ q.labels[0] }}</span>
+                  <span class="text-gray-600">{{ q.labels[2] }}</span>
+                  <span class="text-gray-600">{{ q.labels[4] }}</span>
+                </div>
+                {% endif %}
+
+                <div class="flex justify-between items-end mt-2">
+                  {% for i in range(5) %}
+                    {% set score_value = i + 1 %} 
+                    <label class="flex flex-col items-center cursor-pointer p-1 rounded-lg transition duration-150 hover:bg-gray-100 w-1/5">
+                      <span class="text-xl font-bold text-gray-900 mb-1">{{ score_value }}</span> 
+                      <input type="radio" name="{{ q.id }}" value="{{ score_value }}" required
+                            class="form-radio h-5 w-5 text-blue-600 border-gray-400 focus:ring-blue-600 bg-gray-100">
+                    </label>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          
+
+          <div class="mt-6 text-center">
+            <button type="submit"
+              class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-xl"
+              id="submit-button">
+              回答を送信
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+    
+  </div>  
+
+  <script>
+    const PRE_REF_DURATION_MS = 1500; // 新規追加: 基準刺激前指示の持続時間
+    const REF_DURATION_MS = 5000;
+    const INTERVAL_DURATION_MS = 1500; 
+    const MAIN_DURATION_MS = 5000;
+
+
+    const preRefPhase = document.getElementById("pre-reference-phase"); // 新規追加
+    const refPhase = document.getElementById("reference-phase");
+    const intervalPhase = document.getElementById("interval-phase");
+    const mainPhase = document.getElementById("main-phase");
+    const questionPhase = document.getElementById("question-phase");
+    const rtInput = document.getElementById("rt-evaluation-input");
+    const form = document.getElementById("evaluation-form");
+
+    let startTime = 0;
+
+    // 初期起動関数 (PreReferencePhaseから開始)
+    window.onload = startPreReferencePhase;
+
+
+    // 新規追加: 基準刺激前指示フェーズ -> 基準刺激フェーズ
+    function startPreReferencePhase() {
+      preRefPhase.classList.remove("hidden");
+      setTimeout(startReferencePhase, PRE_REF_DURATION_MS);
+    }
+
+
+    // 基準刺激フェーズ -> インターバルフェーズ
+    function startReferencePhase() {
+      preRefPhase.classList.add("hidden"); // 前指示を非表示
+      refPhase.classList.remove("hidden");
+      intervalPhase.classList.add("hidden");
+      mainPhase.classList.add("hidden");
+      setTimeout(startIntervalPhase, REF_DURATION_MS);
+    }
+
+    // インターバルフェーズ -> メイン刺激フェーズ
+    function startIntervalPhase() {
+      refPhase.classList.add("hidden");
+      mainPhase.classList.add("hidden");
+      intervalPhase.classList.remove("hidden"); 
+      setTimeout(startMainPhase, INTERVAL_DURATION_MS);
+    }
+
+
+    // メイン刺激フェーズ -> 質問フォームフェーズ
+    function startMainPhase() {
+      intervalPhase.classList.add("hidden"); 
+      mainPhase.classList.remove("hidden");
+      setTimeout(startQuestionPhase, MAIN_DURATION_MS);
+    }
+
+    function startQuestionPhase() {
+      mainPhase.classList.add("hidden");
+      questionPhase.classList.remove("hidden");
+      startTime = performance.now();
+      form.addEventListener("submit", handleFormSubmit);
+    }
+
+    function handleFormSubmit() {
+      const endTime = performance.now();
+      rtInput.value = (endTime - startTime).toFixed(3);
+    }
+  </script>
+
+</body>
+</html>

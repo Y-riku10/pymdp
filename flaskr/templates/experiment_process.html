@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>実験</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* VAS風スケールのためのカスタムスタイル (変更なし) */
+    .vas-scale-container {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end; 
+      padding: 22px 0 10px;
+    }
+
+    .vas-scale-bar {
+      content: '';
+      position: absolute;
+      top: 10px;
+      height: 2px;
+      background-color: #CBD5E0;
+      z-index: 10;
+      left: 46px; 
+      right: 46px;
+    }
+
+    /* 各ラジオボタンを均等に配置するための調整 (7段階) */
+    .vas-radio-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        /* width: calc(100% / 7); /* 元のコード */
+        flex-grow: 1; /* 均等幅を確保 */
+        padding: 0;
+        z-index: 20; 
+    }
+    
+    .vas-radio-item::before {
+        content: '';
+        position: absolute;
+        top: 6px;
+        width: 2px;
+        height: 10px;
+        background-color: #94A3B8;
+        z-index: 15;
+    }
+
+
+    .vas-score-number {
+        font-size: 0.8rem;
+        color: #64748B;
+        margin-bottom: 5px;
+        position: absolute;
+        top: 5px;
+        transform: translateX(-50%);
+        left: 50%;
+        z-index: 30;
+    }
+
+    .vas-radio-item input[type="radio"] {
+        appearance: none;
+        width: 16px; 
+        height: 16px;
+        border: 2px solid #6B7280; 
+        border-radius: 50%;
+        margin-top: 5px;
+        background-color: white;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s;
+        z-index: 30;
+    }
+
+    .vas-radio-item input[type="radio"]:hover { border-color: #3B82F6; }
+    .vas-radio-item input[type="radio"]:checked { border-color: #3B82F6; background-color: #3B82F6; }
+    .vas-radio-item input[type="radio"]:checked::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: white;
+    }
+    
+    .vas-label-box {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin-bottom: 1px;
+    }
+    /* ページのフルサイズを保証 */
+    .full-phase {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    /* hidden クラスの定義 */
+    .hidden {
+        display: none !important;
+    }
+
+  </style>
+</head>
+
+<!-- ここからレイアウト -->
+
+<body class="bg-white w-screen h-screen">
+
+  <!-- 基準動作の指示と提示 -->
+  <div id="pre-reference-phase" class="full-phase bg-white hidden">
+    <p class="text-4xl font-bold text-gray-800 tracking-widest">基準となる動きを提示します</p>
+  </div>
+  <div id="reference-phase" class="full-phase hidden">
+    <div class="flex-1 flex items-center justify-center w-full h-full">
+      <video
+        id="ref-video"
+        src="{{ standard_path }}"
+        muted
+        playsinline
+        preload="auto"
+        class="max-w-full max-h-full object-contain">
+      </video>
+    </div>
+  </div>
+
+  <!-- 評価対象の指示と提示 -->
+  <div id="pre-main-phase" class="full-phase bg-white hidden">
+    <p class="text-4xl font-bold text-gray-800 tracking-widest">次は、評価対象の動きです</p>
+  </div>
+  <div id="main-phase" class="full-phase hidden">
+    <div class="flex items-center justify-center bg-white w-full h-full">
+      <video
+        id="main-video"
+        src="{{ main_path }}"
+        muted
+        playsinline
+        preload="auto"
+        class="max-w-full max-h-full object-contain">
+      </video>
+    </div>
+  </div>
+
+  <!-- ②回答フォームと刺激再提示を両方表示するバージョン -->
+<div id="question-phase" class="hidden w-full h-full flex flex-col overflow-hidden">
+
+  <!-- 刺激提示部分（上2/3） -->
+  <div class="w-full h-2/3 bg-white flex flex-col">
+
+    <!-- 指示文（高さ固定・余白あり） -->
+    <div class="shrink-0 text-center pt-6 pb-4">
+      <h1 class="text-3xl font-bold test-center text-gray-800">
+        評価フェーズ
+      </h1>
+      <p class="text-center text-gray-600">
+      この動きについて、以下の各項目で当てはまるものを選んでください。
+      </p>
+    </div>
+
+    <!-- 刺激表示（残り高さを全て使う） -->
+    <div class="flex-1 flex items-center justify-center px-6 pb-6">
+      <video
+        id="loop-main-video"
+        src="{{ main_path }}"
+        muted
+        playsinline
+        class="max-w-full max-h-full object-contain">
+      </video>
+    </div>
+
+  </div>
+
+  <!-- 回答フォーム部分（下1/3・内部スクロール） -->
+  <div class="w-full h-1/3 bg-white overflow-y-auto">
+    <div class="w-full max-w-3xl mx-auto p-6">
+      <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+
+        <form method="POST" action="{{ url_for('experiment_process') }}" id="evaluation-form">
+          <input type="hidden" name="rt_evaluation" id="rt-evaluation-input" value="">
+
+          <div class="space-y-2">
+            {% for q in questions %}
+              <div class="question-block bg-gray-50 p-4 rounded-xl border border-gray-200">
+
+                <p class="text-lg text-gray-500 flex">
+                  {{ q.text }} ({{ q.note }})
+                </p>
+
+
+                <div class="vas-label-box text-base font-medium flex justify-between">
+                  {% if session.get('is_reverse_scale') %}
+                  <span class="text-gray-600">{{ q.labels[-1] }}</span> 
+                  <span class="text-gray-600">どちらでもない</span> 
+                  <span class="text-gray-600">{{ q.labels[0] }}</span>
+                  {% else %}
+                  <span class="text-gray-600">{{ q.labels[0] }}</span> 
+                  <span class="text-gray-600">どちらでもない</span> 
+                  <span class="text-gray-600">{{ q.labels[-1] }}</span>
+                  {% endif %}
+                </div>
+
+                <div class="vas-scale-container">
+                  <div class="vas-scale-bar"></div>
+                  {% for i in range(7) %}
+                    {% if session.get('is_reverse_scale') %}
+                      {% set score_value = 7 - i %}
+                    {% else %}
+                      {% set score_value = i + 1 %}
+                    {% endif %}
+                    <label class="vas-radio-item cursor-pointer">
+                      <input type="radio"
+                             name="{{ q.id }}"
+                             value="{{ score_value }}"
+                             required>
+                    </label>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="mt-10 text-center">
+            <button type="submit"
+              class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-xl">
+              回答を送信
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  
+
+
+  <!-- ここからJavaScript部分 -->
+  <script>
+    // 刺激の持続時間
+    const PRE_REF_DURATION_MS = 1500; 
+    const REF_DURATION_MS = 4975;
+    const PRE_MAIN_DURATION_MS = 1500;
+    const MAIN_DURATION_MS = 4975;    
+
+    // 追加：動画前後の静止時間
+    const STILL_BEFORE_MS = 500; // 動画が始まる前の静止（1秒）
+    const STILL_AFTER_MS = 500;  // 動画が終わった後の静止（1秒）
+
+    // HTML要素の取得
+    const preRefPhase = document.getElementById("pre-reference-phase");
+    const refPhase = document.getElementById("reference-phase");
+    const refVideo = document.getElementById("ref-video"); // これが漏れていました
+    const preMainPhase = document.getElementById("pre-main-phase"); 
+    const mainPhase = document.getElementById("main-phase");
+    const mainVideo = document.getElementById("main-video"); // これが漏れていました
+
+    const loopMainVideo = document.getElementById("loop-main-video");
+
+    const questionPhase = document.getElementById("question-phase");
+    const rtInput = document.getElementById("rt-evaluation-input");
+    const form = document.getElementById("evaluation-form");
+
+    let startTime = 0;
+
+    // ページのDOMツリー構築完了時に実行
+    document.addEventListener("DOMContentLoaded", function() {
+        if (form) {
+            form.addEventListener("submit", handleFormSubmit);
+        }
+        
+        // シーケンスを開始
+        startPreReferencePhase();
+    });
+
+    // -> preRefPhase表示
+    function startPreReferencePhase() {
+      // 厳密な初期化 (HTML側に hidden がなくても動作するように)
+      if (preRefPhase) preRefPhase.classList.remove("hidden");
+      if (refPhase) refPhase.classList.add("hidden");
+      if (preMainPhase) preMainPhase.classList.add("hidden");
+      if (mainPhase) mainPhase.classList.add("hidden");
+      if (questionPhase) questionPhase.classList.add("hidden");
+      
+      // 指定時間後に次のフェーズへ
+      setTimeout(startReferencePhase, PRE_REF_DURATION_MS);
+    }
+
+    // preRefPhase -> refPhase (基準刺激の提示)
+    function startReferencePhase() {
+      if (preRefPhase) preRefPhase.classList.add("hidden");
+      if (refPhase) refPhase.classList.remove("hidden");
+
+      // 最初の静止
+      refVideo.currentTime = 0;
+      refVideo.pause();
+
+      setTimeout(() => {
+        // 再生開始
+        refVideo.play();
+        
+        // 動画終了後の処理（再生時間分待つ）
+        setTimeout(() => {
+          refVideo.pause(); // 最後のフレームで止める
+          
+          // 最後の静止
+          setTimeout(startPreMainPhase, STILL_AFTER_MS);
+        }, REF_DURATION_MS);
+      
+      }, STILL_BEFORE_MS);
+  }
+      
+
+    // refPhase -> preMainPhase (メイン刺激前指示の提示)
+    function startPreMainPhase() {
+      if (refPhase) refPhase.classList.add("hidden");
+      if (preMainPhase) preMainPhase.classList.remove("hidden");
+      
+      // メイン刺激前指示の持続時間 (1500ms) 後に次のフェーズへ
+      setTimeout(startMainPhase, PRE_MAIN_DURATION_MS);
+    }
+
+    // preMainPhase -> mainPhase (メイン刺激の提示)
+    function startMainPhase() {
+      if (preMainPhase) preMainPhase.classList.add("hidden"); 
+      if (mainPhase) mainPhase.classList.remove("hidden");
+
+      // 最初の静止
+      mainVideo.currentTime = 0;
+      mainVideo.pause();
+
+      setTimeout(() => {
+        // 再生開始
+        mainVideo.play();
+
+        // 動画終了後の処理
+        setTimeout(() => {
+          mainVideo.pause();
+
+          // 最後の静止
+          setTimeout(startQuestionPhase, STILL_AFTER_MS);
+        }, MAIN_DURATION_MS);
+
+      }, STILL_BEFORE_MS);
+    }
+
+
+    // mainPhase -> questionPhase (質問画面の提示とRT計測開始)
+    function startQuestionPhase() {
+      if (mainPhase) mainPhase.classList.add("hidden");
+      if (questionPhase) questionPhase.classList.remove("hidden");
+      
+      // RT計測開始 (質問画面が表示された瞬間)
+      startTime = performance.now();
+      // ループ再生の開始
+      playVideoWithCustomLoop(loopMainVideo);
+    }
+
+    // カスタムループ制御関数
+    function playVideoWithCustomLoop(videoElement) {
+      if (!videoElement) return;
+
+      // 1. 最初に戻して一時停止
+      videoElement.currentTime = 0;
+      videoElement.pause();
+
+      // 2. 開始前の静止
+      setTimeout(() => {
+        videoElement.play();
+
+        // 3. 動画の長さ分だけ再生 (MAIN_DURATION_MS を使用)
+        setTimeout(() => {
+          videoElement.pause();
+
+          // 4. 終了後の静止
+          setTimeout(() => {
+            // 5. 最初に戻ってループ (再帰呼び出し)
+            playVideoWithCustomLoop(videoElement);
+          }, STILL_AFTER_MS);
+
+        }, MAIN_DURATION_MS);
+
+      }, STILL_BEFORE_MS);
+    }
+
+    // フォーム送信時の処理（RT計測とバリデーション）
+    function handleFormSubmit(event) {
+      event.preventDefault(); // ページリロードを防ぐ
+      
+      const requiredRadios = form.querySelectorAll('input[type="radio"]:required');
+      let allAnswered = true;
+      const questionIds = new Set();
+
+      requiredRadios.forEach(radio => questionIds.add(radio.name));
+      
+      questionIds.forEach(id => {
+          if (!form.querySelector(`input[name="${id}"]:checked`)) {
+              allAnswered = false;
+          }
+      });
+      
+      if (!allAnswered) {
+          alert("すべての質問に回答してください。"); 
+          return;
+      }
+      
+      const endTime = performance.now();
+      rtInput.value = (endTime - startTime).toFixed(3);
+      
+      // ⚠️ RTが計測された後、データは自動でサーバーに送信されません。
+      // ここで、データを POST するための処理が必要です。
+
+      // 例: JavaScriptで非同期送信する場合
+      /*
+      fetch(form.action, {
+          method: form.method,
+          body: new FormData(form),
+      }).then(response => {
+          // 成功時の処理 (例: 次の試行へ遷移)
+          console.log("Data successfully sent.");
+      }).catch(error => {
+          console.error('Error:', error);
+      });
+      */
+      
+      // 例: 標準のフォーム送信でサーバーへ移動する場合
+      form.submit(); // ページが遷移します。
+
+      // alert(`反応時間: ${rtInput.value} ms. データ処理を実行します。`); 
+    }
+  </script>
+</body>
+</html>

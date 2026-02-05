@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>刺激評価</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-white w-screen h-screen">
+
+
+  <!-- 🌟 左右提示フェーズ -->
+  <div id="reference-phase" class="w-full h-full flex justify-center items-center">
+
+      <!-- 2つの動画をまとめるラッパ -->
+    <div class="flex items-center justify-center">
+      
+      <!-- 基準刺激 -->
+      <div class="w-1/2 h-full">
+        <img src="{{ standard_path }}" class="w-full h-full object-cover">
+      </div>
+
+      <!-- 混沌刺激 -->
+      <div class="w-1/2 h-full">
+        <img src="{{ chaotic_path }}" class="w-full h-full object-cover">
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- 🌟 メイン刺激 + 質問フォームフェーズ -->
+  <div id="main-phase" class="hidden w-full h-full flex flex-col items-center">
+
+    <!-- メイン刺激 -->
+    <div class="w-full h-2/3 bg-white rounded-xl flex items-center justify-center">
+      <div class="aspect-video h-full">
+        <img id="main-stimulus" src="{{ main_path }}" class="w-full h-full object-contain">
+      </div>
+    </div>
+
+
+    <!-- 質問フォーム（固定高さ + スクロール） -->
+    <!-- 質問フォーム領域 -->
+    <div class="w-full h-1/3 bg-white flex overflow-y-auto border border-gray-100 items-center justify-center p-6 space-y-4">
+      <!-- 質問フォームカード -->
+      <div class="w-full max-w-2xl bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+        <form method="POST" action="{{ url_for('experiment_process') }}" id="evaluation-form">
+          <input type="hidden" name="rt_evaluation" id="rt-evaluation-input" value="">
+
+          <div class="space-y-1">
+            {% for q in questions %}
+              <div class="question-block bg-gray-50 p-5 rounded-lg border border-gray-200">
+                <!-- 質問文 -->
+                <p class="text-lg font-semibold text-gray-800">
+                  {{ loop.index }}. {{ q.text }}
+                </p>
+                <!-- ラジオボタン群 -->
+                <div class="flex justify-between mt-2">
+                  {% for i in range(q.labels|length) %}
+                  {% set score_value = q.score_values[i] %}
+                    <label class="flex flex-col items-center cursor-pointer p-2 rounded-lg transition duration-150 hover:bg-gray-100 w-1/5">
+                      <input type="radio" name="{{ q.id }}" value="{{ score_value }}" required
+                            class="form-radio h-5 w-5 text-blue-500 border-gray-400 focus:ring-blue-500 bg-gray-100">
+                      <span class="mt-1 text-sm font-medium text-gray-700">{{ q.labels[i] }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+
+                <!-- ラベル行 -->
+                <!-- <div class="flex justify-between text-xs text-gray-500 mt-1">
+                  {% for label in q.labels %}
+                    <span>{{ label }}</span>
+                  {% endfor %}
+                </div> -->
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="mt-6 text-center">
+            <button type="submit"
+              class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-xl"
+              id="submit-button">
+              回答を送信
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+    
+  </div>  
+
+  <script>
+    const REF_DURATION_MS = 5000;
+
+    const refPhase = document.getElementById("reference-phase");
+    const mainPhase = document.getElementById("main-phase");
+    const rtInput = document.getElementById("rt-evaluation-input");
+    const form = document.getElementById("evaluation-form");
+
+    let startTime = 0;
+
+    function startReferencePhase() {
+      refPhase.classList.remove("hidden");
+      mainPhase.classList.add("hidden");
+      setTimeout(startMainPhase, REF_DURATION_MS);
+    }
+
+    function startMainPhase() {
+      refPhase.classList.add("hidden");
+      mainPhase.classList.remove("hidden");
+      startTime = performance.now();
+      form.addEventListener("submit", handleFormSubmit);
+    }
+
+    function handleFormSubmit() {
+      const endTime = performance.now();
+      rtInput.value = (endTime - startTime).toFixed(3);
+    }
+
+    window.onload = startReferencePhase;
+  </script>
+
+</body>
+</html>

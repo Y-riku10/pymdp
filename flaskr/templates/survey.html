@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>実験後アンケート</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* 設問のラベルが flex で均等に配置されるように設定 */
+        .sd-labels-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start; /* ラベルのテキストが長い場合に上端揃え */
+            margin-top: 0.5rem;
+            font-size: 0.75rem; /* text-xs */
+            color: #6b7280; /* text-gray-500 */
+            line-height: 1.2;
+        }
+        .sd-labels-container > span {
+            text-align: center;
+            flex-basis: 20%; /* 5段階スケールで均等に幅を確保 */
+            padding: 0 0.25rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-200 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">実験後アンケート</h1>
+        <p class="mb-8 text-center text-gray-600">自分にどの程度あてはまると思いますか</p>
+
+        <form method="POST" action="{{ url_for('survey') }}">
+            <div class="space-y-6">
+                {% for q in questions %}
+                    <div class="question-block bg-gray-50 p-5 rounded-lg border border-gray-200">
+                        <p class="font-semibold mb-3 text-gray-800">
+                            {{ loop.index }}. {{ q.text }}
+                        </p>
+                        
+                        <!-- ラジオボタン (1-5の数字のみ) -->
+                        <div class="flex justify-between mt-3 space-x-2">
+                            {% for i in range(q.labels|length) %}
+                            {% set score_value = q.score_values[i] %}
+                            <label class="flex flex-col items-center cursor-pointer p-2 rounded-lg transition duration-150 hover:bg-gray-100 w-1/5">
+                                <input type="radio" name="{{ q.id }}" value="{{ score_value }}" required
+                                    class="form-radio h-5 w-5 text-blue-500 border-gray-400 focus:ring-blue-500 bg-gray-100">
+                                <span class="mt-1 text-sm font-medium text-gray-700">{{score_value}}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+
+                        <!-- 💡 questions.ymlで定義されたラベルを表示 -->
+                        <div class="sd-labels-container">
+                            {% for label in q.labels %}
+                                <span>{{ label }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-8 text-center">
+                <button type="submit" 
+                        class="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 rounded-xl transition duration-200 shadow-md">
+                    回答を送信する
+                </button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

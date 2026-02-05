@@ -1,0 +1,2 @@
+Subject_ID,Seed,Experiment_StartTime,Experiment_EndTime,Block_Order,Question_Shuffle_Order,IC_DC1,IC_DC2,IC_DC3,IC_DC4,IC_DC5,IC_DC6,IC_SC1,IC_SC2,IC_SC3,IC_SC4,IC_SC5,IC_SC6
+22,22,2025-12-26 07:59:09.518147945,2025-12-26 08:26:51.575600386,"['INSTRUCTION', 'PRACTICE', 'TYPE1', 'BREAK', 'TYPE2', 'SURVEY', 'COMPLETE']","['confusion', 'beauty', 'boredom', 'predictibity', 'interest']",4,5,3,4,5,3,5,4,5,4,3,4

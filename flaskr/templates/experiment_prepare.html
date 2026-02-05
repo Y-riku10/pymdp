@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>試行準備</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> -->
+</head>
+<body class="bg-white min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-xl bg-white p-10 rounded-xl shadow-2xl text-center">
+        
+        <h1 class="text-3xl font-bold mb-8 text-gray-800">
+            {% if current_block == 'PRACTICE' %}
+                練習 {{ current_index + 1 }} / 3
+            {% else %}
+                試行 {{ trial_num }} / {{ all_trial_num }}
+            {% endif %} 
+        </h1>
+        
+        <!-- 試行番号の表示 (デバッグ/進捗確認用。本番では非表示にしても良い) -->
+        <p class="text-xl  text-gray-500 mb-6">
+            準備ができたら開始してください
+        </p>
+
+        <p class="text-sm text-gray-500 mb-6">
+            ボタンを押すとすぐに次の画面に切り替わります。
+        </p>
+
+        <!-- POSTで/experiment_prepareに送信することで、次の/experiment_processへリダイレクトします -->
+        <!-- このボタンを押した瞬間からRT計測を開始すると想定 -->
+        <form method="POST" action="{{ url_for('experiment_prepare') }}">
+            <button type="submit" 
+                    class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-extrabold py-5 px-16 rounded-full transition duration-150 shadow-lg shadow-gray-500/50 text-2xl tracking-wider uppercase transform hover:scale-100">
+                次の試行を開始
+            </button>
+        </form>
+
+
+    </div>
+</body>
+</html>

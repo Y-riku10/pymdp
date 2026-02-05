@@ -18,10 +18,10 @@ def open_browser():
 # debug=True（リローダー機能）を使用している場合、この処理が二重に実行されないよう注意が必要です。
 # 以下の例では、Timerを使用することで、メインのアプリケーション実行とは別のスレッドで実行しています。
 # サーバーが起動してからブラウザを開くため、通常はthreading.Timerを使用するのが最も確実です。
-threading.Timer(1.0, open_browser).start()
+threading.Timer(2.0, open_browser).start()
 
 # 練習試行回数を定数として定義
-PRACTICE_TRIALS_PER_RUN = 2 
+PRACTICE_TRIALS_PER_RUN = 3
 
 # 注意: 本番環境ではより複雑な秘密鍵を使用してください
 app.secret_key = "very_secure_secret_key_for_psychology_experiment" 
@@ -326,7 +326,9 @@ def experiment_prepare():
         
     current_block = session.get('current_block')
     current_index = session.get('current_trial_index')
-    print(f"{current_block}, {current_index}")
+    trial_num = session.get('trial_num')
+    print(f"block: {current_block}, index: {current_index}, trial: {trial_num}")
+    
     
     # trial_data = get_current_trial_data(session.get('stimuli_map', {}), current_block, current_index)
     
@@ -341,7 +343,7 @@ def experiment_prepare():
         'experiment_prepare.html',
         current_block=current_block,
         current_index=current_index,
-        trial_num=session['trial_num'],
+        trial_num=trial_num,
         all_trial_num=session['all_trial_num']
     )
 
@@ -404,7 +406,11 @@ def experiment_process():
         
         # 次の試行へ
         session['current_trial_index'] += 1
-        
+        if current_block != 'PRACTICE':
+            session['trial_num'] += 1       
+            
+        session.modified  = True
+
         # 次の試行があるかチェック
         if session['current_trial_index'] < trial_data['total_trials_in_block']:
             # 次の試行の準備画面へ

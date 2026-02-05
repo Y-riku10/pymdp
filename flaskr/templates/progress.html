@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブロック開始</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> -->
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-xl bg-white p-10 rounded-xl shadow-2xl text-center">
+        
+        <h1 class="text-3xl font-bold mb-4 text-gray-800">
+            {% if block_id == 'PRACTICE' %}
+                練習
+            {% elif block_id == 'TYPE1' or block_id == 'TYPE2' %}
+                <!-- 本番ブロック ({{ '前半' if block_id == 'TYPE1' else '後半' }}) -->
+                本番
+            {% else %}
+                本番
+            {% endif %}
+        </h1>
+
+        <!-- <div class="space-y-4 text-gray-700 mt-6 mb-8 text-left border-l-4 border-blue-500 pl-4 py-2 bg-blue-50"> -->
+        
+        <div class="space-y-4 text-gray-700 mt-6 mb-8 text-left border-l-4 border-blue-500 pl-4 py-2 bg-blue-50">
+            <p>
+                {% if block_id == 'PRACTICE' %}
+                    これは<strong class="font-semibold text-red-600">練習です</strong>。本番と同じ手順で動きの評価を行いますが、データは収集されません。
+                {% elif block_id == 'TYPE1' or block_id == 'TYPE2' %}
+                    本番の試行に入ります。集中して、直感的な印象に従って正直にご回答ください。
+                {% else %}
+                    次の実験フェーズに進みます。
+                {% endif %}
+            </p>
+            <p class="text-sm text-gray-500">
+                各試行は、「基準動作の確認」と「メイン動作の評価」のステップで構成されます。
+            </p>
+        </div>
+
+        <form method="POST" action="{{ url_for('progress') }}" class="mt-8">
+            <button type="submit" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-xl transition duration-200 shadow-lg shadow-blue-500/50 text-xl">
+                開始する
+            </button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,236 @@
+# questions.yml
+
+
+# 知的好奇心尺度（西川一二・雨宮俊彦, 2015）
+questions_curiosity:
+  # 拡散的好奇心 (Diversive Curiosity: DC)
+  - id: IC_DC1
+    category: Curiosity_Scale
+    data_key: dc_diversive1
+    text: "新しいことに挑戦することは好きだ。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "新奇性への積極的な関心を測定（拡散的好奇心）"
+
+  - id: IC_DC2
+    category: Curiosity_Scale
+    data_key: dc_diversive2
+    text: "誰もやったことのない物事にとても興味がある。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "新奇・未知への探索意欲を測定（拡散的好奇心）"
+
+  - id: IC_DC3
+    category: Curiosity_Scale
+    data_key: dc_diversive3
+    text: "どこに行っても、新しい物事や経験を探す。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "新しい刺激や体験を求める傾向を測定（拡散的好奇心）"
+
+  - id: IC_DC4
+    category: Curiosity_Scale
+    data_key: dc_diversive4
+    text: "今までやったことのない課題にも喜んで取り組める。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "課題への挑戦意欲を測定（拡散的好奇心）"
+
+  - id: IC_DC5
+    category: Curiosity_Scale
+    data_key: dc_diversive5
+    text: "新しいアイデアをあれこれ考える。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "発想の柔軟性や創造的探索を測定（拡散的好奇心）"
+
+  - id: IC_DC6
+    category: Curiosity_Scale
+    data_key: dc_diversive6
+    text: "何事にも興味関心が強い。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "広範な興味の強さを測定（拡散的好奇心）"
+
+  # 特殊的好奇心 (Specific Curiosity: SC)
+  - id: IC_SC1
+    category: Curiosity_Scale
+    data_key: sc_specific1
+    text: "はっきりした明快な答えが出るまでずっと考える。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "知的な問題解決への粘り強さを測定（特殊的好奇心）"
+
+  - id: IC_SC2
+    category: Curiosity_Scale
+    data_key: sc_specific2
+    text: "解答を理解できないと気持ちが落ちつかず、なんとか理解しなければと思う。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "理解への欲求と未解決状態の不快感を測定（特殊的好奇心）"
+
+  - id: IC_SC3
+    category: Curiosity_Scale
+    data_key: sc_specific3
+    text: "物事を学ぶときには、徹底的に調べたい。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "学習過程での深い探究志向を測定（特殊的好奇心）"
+
+  - id: IC_SC4
+    category: Curiosity_Scale
+    data_key: sc_specific4
+    text: "予期しない出来事が起きたとき、原因がわかるまで調べる。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "不確実性や矛盾に対する解明欲求を測定（特殊的好奇心）"
+
+  - id: IC_SC5
+    category: Curiosity_Scale
+    data_key: sc_specific5
+    text: "ある考えを理解するために必要な知識を全て学ばないと満足できない。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "完全な理解を目指す傾向を測定（特殊的好奇心）"
+
+  - id: IC_SC6
+    category: Curiosity_Scale
+    data_key: sc_specific6
+    text: "問題を解くために長時間じっくり考える。"
+    type: sd7
+    labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+    score_values: [1, 2, 3, 4, 5, 6, 7]
+    note: "粘り強い問題解決姿勢を測定（特殊的好奇心）"
+
+
+
+
+
+
+
+
+
+# # 好奇心傾向(CEI/CEI-II)
+# questions_curiosity:
+#   # 喜びを伴う探索 (Joyful Exploration: JE)
+#   - id: CEI_JE1
+#     category: Curiosity_Scale
+#     data_key: je_joy_explore1
+#     text: "新しい分野や知識に触れるプロセスがとても好きだ。"
+#     type: sd7
+#     labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+#     note: "探索行動の意欲（ポジティブな感情）を測定"
+
+#   - id: CEI_JE2
+#     category: Curiosity_Scale
+#     data_key: je_joy_explore2
+#     text: "自分の周囲にある興味深い事柄を探し回るのが好きだ。"
+#     type: sd7
+#     labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+#     note: "探索行動の意欲（ポジティブな感情）を測定"
+
+#   # 剥奪感度 (Deprivation Sensitivity: DS)
+#   - id: CEI_DS1
+#     category: Curiosity_Scale
+#     data_key: ds_deprive_sense1
+#     text: "何かを理解できないとき、モヤモヤして落ち着かなくなる。"
+#     type: sd7
+#     labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+#     note: "情報利得（IG）の獲得を強く動機づける要因（IGの価値評価）を測定"
+
+#   - id: CEI_DS2
+#     category: Curiosity_Scale
+#     data_key: ds_deprive_sense2
+#     text: "問題を解明し、わからなかったことがわかるまで、諦められない。"
+#     type: sd7
+#     labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+#     note: "情報利得（IG）の獲得を強く動機づける要因（IGの価値評価）を測定"
+
+#   # ストレス耐性 (Stress Tolerance: ST)
+#   - id: CEI_ST1
+#     category: Curiosity_Scale
+#     data_key: st_stress_tol1
+#     text: "複雑で曖昧な状況に直面しても、落ち着いて対処できる。"
+#     type: sd7
+#     labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+#     note: "高サプライズ（高IG）の刺激に対する混乱（Confusion）の低さを説明する要因"
+
+#   - id: CEI_ST2
+#     category: Curiosity_Scale
+#     data_key: st_stress_tol2
+#     text: "私は、予期しない状況や不確実な状況を、それほど恐れない。"
+#     type: sd7
+#     labels: ["全く当てはまらない", "当てはまらない", "やや当てはまらない", "どちらでもない", "やや当てはまる", "当てはまる", "非常によく当てはまる"]
+#     note: "高サプライズ（高IG）の刺激に対する混乱（Confusion）の低さを説明する要因"
+
+
+
+
+# # 動きの評価
+# questions:
+#   - id: q1
+#     category: Motion_Eval
+#     data_key: like
+#     # text: "この動きは好きですか？" かい、ふかいを明示的に聞いた方がよいかも
+#     text: "この動きはどのくらい快いと感じますか？" # 「好きですか？」→「快いですか？」に変更
+#     type: sd5
+#     labels: ["嫌い", "やや嫌い", "どちらともいえない", "やや好き", "好き"]
+#     labels: ["全く快くない", 〜"快くない"] # labelsを
+
+#     score_values: [1, 2, 3, 4, 5]
+#     note: "全体的な印象としての好意度、純粋な感情的報酬に対応します"
+
+#   - id: q2
+#     category: Motion_Eval
+#     data_key: beauty
+#     # text: "この動きはどのくらい美しいと感じますか？"
+#     text: "この動きの美しさを回答してください" # 「美しいですか？」→「美しさを回答してください」に変更。中立的な表現に。
+#     type: sd5
+#     # labels: ["醜い", "やや醜い", "どちらともいえない", "やや美しい", "美しい"]
+#     labels: ["全く美しくない", "美しくない", "どちらともいえない", "美しい", "とても美しい"] # labelsを変更
+#     score_values: [1, 2, 3, 4, 5]
+#     note: "物理的な効率性や優雅さの印象、美的評価に対応します"
+
+# # 保留: これはメカメカしいプロダクトについての評価をした例があればそれを引っ張ってくるべき
+#   # - id: q3
+#   #   category: Motion_Eval
+#   #   data_key: strength
+#   #   text: "この動きは力強いですか？"
+#   #   type: sd5
+#   #   labels: ["弱々しい", "やや弱々しい", "どちらともいえない", "やや力強い", "力強い"]
+#   #   score_values: [1, 2, 3, 4, 5]
+#   #   note: "エネルギー消費量や力学的な強さの印象に対応します"
+
+
+#   - id: q4
+#     category: Motion_Eval
+#     data_key: interest
+#     text: "この動きの興味深さを回答してください。"
+#     type: sd5
+#     labels: ["全く興味深くない", "興味深くない", "どちらともいえない", "興味深い", "とても興味深い"] #説明で面白さの補足
+#     score_values: [1, 2, 3, 4, 5]
+#     note: "認知的報酬（IG）の獲得、知的な満足感に対応します"
+
+# # 混乱-混乱しない　に変更
+#   - id: q5
+#     category: Motion_Eval
+#     data_key: understand
+#     text: "この動きは理解しやすいですか？"
+#     type: sd5
+#     labels: ["混乱する", "やや混乱する", "どちらともいえない", "やや混乱しない", "混乱しない"]
+#     score_values: [1, 2, 3, 4, 5]
+#     note: "認知的努力……の容易さ、処理の流暢さに対応します"
+  
+#   # 退屈-退屈しない　を追加
+#   #　総じて、boredom, pleasure, interest, confusion + beautyの5項目

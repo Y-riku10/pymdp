@@ -1,0 +1,239 @@
+<!-- 7段階のビジュアルアナログスケールを意識した評価フォームを実装。 -->
+<!-- 指示画面のあとメイン動作を提示する。
+そのあとに評価フォームを表示する。 -->
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>刺激評価 (7段階VAS風 - 修正版)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* VAS風スケールのためのカスタムスタイル */
+    .vas-scale-container {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end; 
+      padding: 35px 0 10px; /* 上部にスペースを大きく確保 (目盛りと数字のため) */
+    }
+
+    /* 1. スケールバーの線 (両極のボタンの内側を結ぶ線分に修正) */
+    .vas-scale-bar {
+      content: '';
+      position: absolute;
+      top: 30px; /* 目盛りとラジオボタンの中間に配置 */
+      height: 2px;
+      background-color: #CBD5E0; /* Gray-300 */
+      z-index: 10;
+      /* 重要: 両端のラジオボタンの中央を結ぶように調整 */
+      /* ラジオボタンのサイズ(16px)の半分(8px)だけ内側から開始/終了 */
+      left: 48px; 
+      right: 48px;
+    }
+
+    /* 各ラジオボタンを均等に配置するための調整 (7段階) */
+    .vas-radio-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: calc(100% / 7); 
+        padding: 0; /* paddingを削除して厳密に等間隔に */
+        z-index: 20; 
+    }
+    
+    /* 3. 目盛りの線 (各選択肢の位置を示す線を追加) */
+    .vas-radio-item::before {
+        content: '';
+        position: absolute;
+        top: 25px; /* スケールバーの位置 (30px) より少し上 */
+        width: 2px;
+        height: 10px;
+        background-color: #94A3B8; /* Gray-400 */
+        z-index: 15;
+    }
+
+
+    /* 2. 選択肢の数字 (スケールの上に移動し、重なりを解消) */
+    .vas-score-number {
+        font-size: 0.8rem;
+        color: #64748B; /* Slate-500 */
+        margin-bottom: 5px;
+        position: absolute; /* 親(vas-radio-item)に対して絶対配置 */
+        top: 5px; /* 最上部に配置 */
+        transform: translateX(-50%); /* 中央寄せ */
+        left: 50%;
+        z-index: 30;
+    }
+
+    /* ラジオボタン自体のサイズ調整 (変更なし) */
+    .vas-radio-item input[type="radio"] {
+        appearance: none;
+        width: 16px; 
+        height: 16px;
+        border: 2px solid #6B7280; 
+        border-radius: 50%;
+        margin-top: 5px; /* 数字とボタンを離す */
+        background-color: white;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s;
+        z-index: 30;
+    }
+
+    .vas-radio-item input[type="radio"]:hover { border-color: #3B82F6; }
+    .vas-radio-item input[type="radio"]:checked { border-color: #3B82F6; background-color: #3B82F6; }
+    .vas-radio-item input[type="radio"]:checked::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: white;
+    }
+    
+    .vas-label-box {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+  </style>
+</head>
+
+<body class="bg-white w-screen h-screen">
+  <div id="pre-main-phase" class="w-full h-full flex justify-center items-center bg-white">
+    <p class="text-4xl font-bold text-gray-800 tracking-widest">これから、評価対象の動きを提示します</p>
+  </div>
+  <div id="main-phase" class="w-full h-full flex justify-center items-center hidden">
+    <div class="flex items-center justify-center bg-white">
+      <div class="w-full h-full">
+        <img src="{{ main_path }}" class="w-full h-full object-cover">
+      </div>
+    </div>
+  </div>
+
+
+  <div id="question-phase" class="hidden w-full h-full flex flex-col items-start overflow-y-auto">
+
+    <div class="w-full bg-white p-6 flex flex-col items-center justify-center">
+      <div class="w-full max-w-3xl justify-center bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">評価フェーズ</h1>
+        <p class="mb-8 text-center text-gray-600">この動きについて、以下の各項目で当てはまるものを選んでください。</p>
+        <form method="POST" action="{{ url_for('experiment_process') }}" id="evaluation-form">
+          <input type="hidden" name="rt_evaluation" id="rt-evaluation-input" value="">
+
+          <div class="space-y-8">
+            {% for q in questions %}
+              <div class="question-block bg-gray-50 p-5 rounded-xl border border-gray-200">
+                
+                <p class="text-xl font-semibold text-gray-800 mb-5">
+                  {{ loop.index }}. {{ q.text }}
+                </p>
+                
+                <div class="vas-label-box text-base font-medium mb-2">
+                  <span class="text-gray-600">{{ q.labels[0] }}</span> 
+                  <span class="text-gray-600">どちらでもない</span> 
+                  <span class="text-gray-600">{{ q.labels[-1] }}</span>
+                </div>
+
+                <div class="vas-scale-container">
+                    <div class="vas-scale-bar"></div> 
+
+                  {% for i in range(7) %} 
+                    {% set score_value = i + 1 %} 
+                    <label class="vas-radio-item cursor-pointer">
+                      <!-- <span class="vas-score-number">{{ score_value }}</span>  -->
+                      <input type="radio" name="{{ q.id }}" value="{{ score_value }}" required
+                            class="focus:ring-blue-600">
+                      </label>
+                  {% endfor %}
+                </div>
+                
+              </div>
+            {% endfor %}
+          </div>
+          
+
+          <div class="mt-10 text-center">
+            <button type="submit"
+              class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-xl"
+              id="submit-button">
+              回答を送信
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+    
+  </div>  
+
+  <script>
+    // (中略: JavaScriptコード - 変更なし)
+    const PRE_MAIN_DURATION_MS = 1500; 
+    const MAIN_DURATION_MS = 5000;
+
+
+    const preMainPhase = document.getElementById("pre-main-phase"); 
+    const mainPhase = document.getElementById("main-phase");
+    const questionPhase = document.getElementById("question-phase");
+    const rtInput = document.getElementById("rt-evaluation-input");
+    const form = document.getElementById("evaluation-form");
+
+    let startTime = 0;
+
+    window.onload = startPreMainPhase;
+
+    function startPreMainPhase() {
+      preMainPhase.classList.remove("hidden");
+      mainPhase.classList.add("hidden");
+      questionPhase.classList.add("hidden");
+      setTimeout(startMainPhase, PRE_MAIN_DURATION_MS);
+    }
+
+
+    function startMainPhase() {
+      preMainPhase.classList.add("hidden"); 
+      mainPhase.classList.remove("hidden");
+      setTimeout(startQuestionPhase, MAIN_DURATION_MS);
+    }
+
+    function startQuestionPhase() {
+      mainPhase.classList.add("hidden");
+      questionPhase.classList.remove("hidden");
+      startTime = performance.now();
+      form.removeEventListener("submit", handleFormSubmit);
+      form.addEventListener("submit", handleFormSubmit);
+    }
+
+    function handleFormSubmit(event) {
+      const requiredRadios = form.querySelectorAll('input[type="radio"]:required');
+      let allAnswered = true;
+      const questionIds = new Set();
+
+      requiredRadios.forEach(radio => questionIds.add(radio.name));
+      
+      questionIds.forEach(id => {
+          if (!form.querySelector(`input[name="${id}"]:checked`)) {
+              allAnswered = false;
+          }
+      });
+      
+      if (!allAnswered) {
+          return;
+      }
+      
+      const endTime = performance.now();
+      rtInput.value = (endTime - startTime).toFixed(3);
+    }
+  </script>
+
+</body>
+</html>
